@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
@@ -18,9 +18,11 @@ import {
   LogIn,
   Wallet,
   Target,
+  Trophy,
   MessageSquare,
   ArrowDownLeft,
   ArrowUpRight,
+  PieChart,
 } from "lucide-react";
 
 import {
@@ -37,8 +39,7 @@ import Skeleton from "@/components/Skeleton";
 const formatDate = (value) =>
   value ? new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Never";
 
-const formatDateTime = (value) =>
-  new Date(value).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+const formatTime = (value) => new Date(value).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 
 const formatMoney = (amount, currency = "USD") => {
   try {
@@ -48,17 +49,82 @@ const formatMoney = (amount, currency = "USD") => {
   }
 };
 
-const EVENT_ICONS = {
-  signup: UserPlus,
-  login: LogIn,
-  transaction: Receipt,
-  budget: Wallet,
-  goal: Target,
-  message: MessageSquare,
+const humanize = (value) => (value ? value.replace(/_/g, " ") : "");
+
+// "Today", "Yesterday", or a full date, used as the timeline's day headings
+const dayLabel = (value) => {
+  const date = new Date(value);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  if (date.toDateString() === today.toDateString()) return "Today";
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+};
+
+const ACTIVITY_FILTERS = [
+  { value: "", label: "All activity" },
+  { value: "transaction", label: "Transactions", countKey: "transactionCount" },
+  { value: "budget", label: "Budgets", countKey: "budgetCount" },
+  { value: "goal", label: "Goals", countKey: "goalCount" },
+  { value: "message", label: "Messages", countKey: "messageCount" },
+  { value: "account", label: "Account" },
+];
+
+const EVENT_STYLE = {
+  "transaction:income": { icon: ArrowDownLeft, tone: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400" },
+  "transaction:expense": { icon: ArrowUpRight, tone: "bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400" },
+  "budget:created": { icon: Wallet, tone: "bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400" },
+  "goal:created": { icon: Target, tone: "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400" },
+  "goal:completed": { icon: Trophy, tone: "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400" },
+  "message:contact": { icon: MessageSquare, tone: "bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400" },
+  "message:feedback": { icon: MessageSquare, tone: "bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400" },
+  "account:signup": { icon: UserPlus, tone: "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400" },
+  "account:login": { icon: LogIn, tone: "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400" },
+};
+
+const DEFAULT_STYLE = { icon: Activity, tone: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400" };
+
+const Chip = ({ children, className = "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300" }) => (
+  <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-medium capitalize ${className}`}>{children}</span>
+);
+
+// Small detail chips under each timeline entry, depending on its type
+const EventChips = ({ event }) => {
+  const m = event.meta || {};
+  if (event.type === "transaction") {
+    return (
+      <>
+        <Chip>{m.category}</Chip>
+        {m.paymentMethod && <Chip>{humanize(m.paymentMethod)}</Chip>}
+        {m.recurring && <Chip className="bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">Recurring</Chip>}
+        {m.transactionDate && <Chip>Dated {formatDate(m.transactionDate)}</Chip>}
+      </>
+    );
+  }
+  if (event.type === "budget") {
+    return <Chip>{m.categoryCount} {m.categoryCount === 1 ? "category" : "categories"}</Chip>;
+  }
+  if (event.type === "goal" && event.action === "created") {
+    return (
+      <>
+        {m.priority && <Chip>{m.priority} priority</Chip>}
+        {m.targetDate && <Chip>Due {formatDate(m.targetDate)}</Chip>}
+      </>
+    );
+  }
+  if (event.type === "message") {
+    return m.replied ? (
+      <Chip className="bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">Replied</Chip>
+    ) : (
+      <Chip className="bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">Awaiting reply</Chip>
+    );
+  }
+  return null;
 };
 
 const tabClass = (active) =>
-  `flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium cursor-pointer ${
+  `flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium cursor-pointer ${
     active
       ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400"
       : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
@@ -71,6 +137,20 @@ const StatTile = ({ label, value, tone = "text-slate-900 dark:text-white" }) => 
   </div>
 );
 
+const ListSkeleton = () => (
+  <div className="flex flex-col gap-2">
+    {[0, 1, 2, 3].map((i) => (
+      <Skeleton key={i} className="h-16 w-full rounded-xl" />
+    ))}
+  </div>
+);
+
+const EmptyState = ({ children }) => (
+  <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center text-sm text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500">
+    {children}
+  </div>
+);
+
 const UserDetailPage = () => {
   const { id } = useParams();
   const router = useRouter();
@@ -79,7 +159,7 @@ const UserDetailPage = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const [tab, setTab] = useState("transactions");
+  const [tab, setTab] = useState("activity");
 
   const [transactions, setTransactions] = useState([]);
   const [txPagination, setTxPagination] = useState(null);
@@ -88,6 +168,7 @@ const UserDetailPage = () => {
   const [txLoading, setTxLoading] = useState(true);
 
   const [events, setEvents] = useState([]);
+  const [eventFilter, setEventFilter] = useState("");
   const [eventsLoading, setEventsLoading] = useState(true);
 
   const [statusOpen, setStatusOpen] = useState(false);
@@ -123,23 +204,38 @@ const UserDetailPage = () => {
   const fetchEvents = useCallback(async () => {
     try {
       setEventsLoading(true);
-      const response = await getUserActivityTimeline(id);
+      const response = await getUserActivityTimeline(id, eventFilter ? { type: eventFilter } : undefined);
       setEvents(response.events);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to load activity");
     } finally {
       setEventsLoading(false);
     }
-  }, [id]);
+  }, [id, eventFilter]);
 
   useEffect(() => {
     fetchUser();
+  }, [fetchUser]);
+
+  useEffect(() => {
     fetchEvents();
-  }, [fetchUser, fetchEvents]);
+  }, [fetchEvents]);
 
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
+
+  // Group timeline entries under day headings, newest first
+  const eventGroups = useMemo(() => {
+    const groups = [];
+    for (const e of events) {
+      const label = dayLabel(e.timestamp);
+      const last = groups[groups.length - 1];
+      if (last && last.label === label) last.items.push(e);
+      else groups.push({ label, items: [e] });
+    }
+    return groups;
+  }, [events]);
 
   const isSelf = user?.email === currentUser?.email;
   const currency = user?.currency || "USD";
@@ -306,16 +402,103 @@ const UserDetailPage = () => {
       </div>
 
       {/* Tabs */}
-      <div className="mt-8 flex gap-2">
-        <button onClick={() => setTab("transactions")} className={tabClass(tab === "transactions")}>
-          <Receipt className="h-4 w-4" /> Transactions
-        </button>
+      <div className="mt-8 flex gap-2 overflow-x-auto pb-1">
         <button onClick={() => setTab("activity")} className={tabClass(tab === "activity")}>
           <Activity className="h-4 w-4" /> Activity
         </button>
+        <button onClick={() => setTab("transactions")} className={tabClass(tab === "transactions")}>
+          <Receipt className="h-4 w-4" /> Transactions
+        </button>
+        <button onClick={() => setTab("plans")} className={tabClass(tab === "plans")}>
+          <PieChart className="h-4 w-4" /> Budgets &amp; Goals
+        </button>
       </div>
 
-      {tab === "transactions" ? (
+      {tab === "activity" && (
+        <div className="mt-4">
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {ACTIVITY_FILTERS.map((f) => {
+              const count = f.countKey ? user.stats?.[f.countKey] : null;
+              return (
+                <button
+                  key={f.value}
+                  onClick={() => setEventFilter(f.value)}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
+                    eventFilter === f.value
+                      ? "bg-indigo-600 text-white"
+                      : "bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700"
+                  }`}
+                >
+                  {f.label}
+                  {count != null && (
+                    <span className={`rounded-full px-1.5 text-[10px] ${eventFilter === f.value ? "bg-white/20" : "bg-white dark:bg-slate-900"}`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-5">
+            {eventsLoading ? (
+              <ListSkeleton />
+            ) : events.length === 0 ? (
+              <EmptyState>No activity of this type yet.</EmptyState>
+            ) : (
+              <div className="flex flex-col gap-6">
+                {eventGroups.map((group) => (
+                  <section key={group.label}>
+                    <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      {group.label}
+                    </h3>
+                    <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
+                      {group.items.map((e, i) => {
+                        const style = EVENT_STYLE[`${e.type}:${e.action}`] || DEFAULT_STYLE;
+                        const Icon = style.icon;
+                        const amountTone =
+                          e.action === "income"
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : e.action === "expense"
+                              ? "text-red-500 dark:text-red-400"
+                              : "text-slate-700 dark:text-slate-300";
+                        return (
+                          <li key={`${e.type}-${e.action}-${e.timestamp}-${i}`} className="flex gap-3 px-4 py-3">
+                            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${style.tone}`}>
+                              <Icon className="h-4 w-4" />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-3">
+                                <p className="text-sm font-medium text-slate-900 dark:text-white">{e.title}</p>
+                                {e.amount != null && (
+                                  <span className={`shrink-0 text-sm font-semibold ${amountTone}`}>
+                                    {e.action === "income" ? "+" : e.action === "expense" ? "−" : ""}
+                                    {formatMoney(e.amount, currency)}
+                                  </span>
+                                )}
+                              </div>
+                              {e.detail && <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">{e.detail}</p>}
+                              {e.meta?.preview && (
+                                <p className="mt-0.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">“{e.meta.preview}”</p>
+                              )}
+                              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                <span className="text-xs text-slate-400 dark:text-slate-500">{formatTime(e.timestamp)}</span>
+                                <EventChips event={e} />
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab === "transactions" && (
         <div className="mt-4">
           <select
             value={txType}
@@ -332,15 +515,9 @@ const UserDetailPage = () => {
 
           <div className="mt-4">
             {txLoading ? (
-              <div className="flex flex-col gap-2">
-                {[0, 1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-14 w-full rounded-xl" />
-                ))}
-              </div>
+              <ListSkeleton />
             ) : transactions.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center text-sm text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500">
-                No transactions yet.
-              </div>
+              <EmptyState>No transactions yet.</EmptyState>
             ) : (
               <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
                 {transactions.map((t) => {
@@ -361,7 +538,7 @@ const UserDetailPage = () => {
                           {t.description || t.transactionCategory}
                         </p>
                         <p className="truncate text-xs capitalize text-slate-500 dark:text-slate-400">
-                          {t.transactionCategory} · {t.paymentMethod?.replace("_", " ")} · {formatDate(t.transactionDate)}
+                          {t.transactionCategory} · {humanize(t.paymentMethod)} · {formatDate(t.transactionDate)}
                         </p>
                       </div>
                       <span
@@ -403,46 +580,78 @@ const UserDetailPage = () => {
             )}
           </div>
         </div>
-      ) : (
-        <div className="mt-4">
-          {eventsLoading ? (
-            <div className="flex flex-col gap-2">
-              {[0, 1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-14 w-full rounded-xl" />
-              ))}
-            </div>
-          ) : (
-            <ol className="relative ml-4 border-l border-slate-200 dark:border-slate-800">
-              {events.map((e, i) => {
-                const Icon = EVENT_ICONS[e.type] || Activity;
-                return (
-                  <li key={i} className="mb-5 ml-6">
-                    <span className="absolute -left-4 flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                      <p className="text-sm font-medium capitalize text-slate-900 dark:text-white">{e.title}</p>
-                      {e.amount != null && (
-                        <span
-                          className={`text-sm font-semibold ${
-                            e.transactionType === "income"
-                              ? "text-emerald-600 dark:text-emerald-400"
-                              : e.transactionType === "expense"
-                                ? "text-red-500 dark:text-red-400"
-                                : "text-slate-700 dark:text-slate-300"
-                          }`}
-                        >
-                          {formatMoney(e.amount, currency)}
-                        </span>
-                      )}
+      )}
+
+      {tab === "plans" && (
+        <div className="mt-4 grid gap-6 lg:grid-cols-2">
+          <section>
+            <h3 className="mb-2 text-sm font-semibold text-slate-900 dark:text-white">Budgets</h3>
+            {!user.budgets?.length ? (
+              <EmptyState>No budgets set.</EmptyState>
+            ) : (
+              <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
+                {user.budgets.map((b) => (
+                  <li key={b._id} className="px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">
+                        {new Date(Date.UTC(b.year, b.month - 1, 1)).toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" })}
+                      </p>
+                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{formatMoney(b.totalBudget, currency)}</span>
                     </div>
-                    {e.detail && <p className="text-xs text-slate-500 dark:text-slate-400">{e.detail}</p>}
-                    <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{formatDateTime(e.timestamp)}</p>
+                    {b.categories?.length > 0 && (
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {b.categories.map((c) => (
+                          <Chip key={c._id || c.category}>
+                            {c.category} · {formatMoney(c.limit, currency)}
+                          </Chip>
+                        ))}
+                      </div>
+                    )}
                   </li>
-                );
-              })}
-            </ol>
-          )}
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section>
+            <h3 className="mb-2 text-sm font-semibold text-slate-900 dark:text-white">Goals</h3>
+            {!user.goals?.length ? (
+              <EmptyState>No goals created.</EmptyState>
+            ) : (
+              <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
+                {user.goals.map((g) => {
+                  const progress = Math.min(Math.round(((g.currentAmount || 0) / g.targetAmount) * 100), 100);
+                  return (
+                    <li key={g._id} className="px-4 py-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="truncate text-sm font-medium text-slate-900 dark:text-white">{g.title}</p>
+                        <Chip
+                          className={
+                            g.status === "completed"
+                              ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
+                              : g.status === "paused"
+                                ? "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                                : "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400"
+                          }
+                        >
+                          {g.status}
+                        </Chip>
+                      </div>
+                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                        <div className="h-full rounded-full bg-indigo-500" style={{ width: `${progress}%` }} />
+                      </div>
+                      <div className="mt-1.5 flex flex-wrap justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <span>
+                          {formatMoney(g.currentAmount, currency)} of {formatMoney(g.targetAmount, currency)} ({progress}%)
+                        </span>
+                        <span>Due {formatDate(g.targetDate)}</span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
         </div>
       )}
 

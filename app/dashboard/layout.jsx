@@ -30,7 +30,8 @@ export default function DashboardLayout({ children }) {
   }, [hydrated, isAuthenticated, user, pathname, router]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
+    // h-dvh (not h-screen) so mobile browser toolbars don't hide the bottom of the page
+    <div className="flex h-dvh overflow-hidden bg-slate-50 dark:bg-slate-950">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex min-w-0 flex-1 flex-col">

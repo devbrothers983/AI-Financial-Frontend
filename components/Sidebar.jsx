@@ -178,7 +178,7 @@ const SidebarContent = ({ collapsed, onToggleCollapsed, onNavigate }) => {
         </div>
       ) : (
         <>
-          <nav className="flex-1 space-y-4 overflow-y-auto px-3 pb-2">
+          <nav className="min-h-0 flex-1 space-y-4 overflow-y-auto px-3 pb-2">
             {groups.map((group, idx) => (
               <div key={group.label || idx}>
                 {group.label && !collapsed && (
@@ -203,7 +203,7 @@ const SidebarContent = ({ collapsed, onToggleCollapsed, onNavigate }) => {
             ))}
           </nav>
 
-          <div className="border-t border-white/10 p-3">
+          <div className="shrink-0 border-t border-white/10 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <Link
               href="/dashboard/settings"
               onClick={onNavigate}
@@ -283,7 +283,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       {/* Mobile overlay sidebar */}
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-40 lg:hidden">
+          <div className="fixed inset-x-0 top-0 z-40 h-dvh lg:hidden">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -296,7 +296,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "tween", duration: 0.25 }}
-              className="absolute left-0 top-0 h-full w-72 shadow-xl"
+              className="absolute left-0 top-0 h-full w-72 max-w-[85vw] shadow-xl"
             >
               <SidebarContent collapsed={false} onNavigate={onClose} />
             </motion.aside>

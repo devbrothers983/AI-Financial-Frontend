@@ -30,8 +30,8 @@ export const getUserTransactions = async (id, params) => {
     return response.data;
 };
 
-export const getUserActivityTimeline = async (id) => {
-    const response = await api.get(`/admin/users/${id}/activity`);
+export const getUserActivityTimeline = async (id, params) => {
+    const response = await api.get(`/admin/users/${id}/activity`, { params });
     return response.data;
 };
 
