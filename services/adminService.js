@@ -25,6 +25,16 @@ export const getUserById = async (id) => {
     return response.data;
 };
 
+export const getUserTransactions = async (id, params) => {
+    const response = await api.get(`/admin/users/${id}/transactions`, { params });
+    return response.data;
+};
+
+export const getUserActivityTimeline = async (id) => {
+    const response = await api.get(`/admin/users/${id}/activity`);
+    return response.data;
+};
+
 export const updateUserRole = async (id, role) => {
     const response = await api.put(`/admin/users/${id}/role`, { role });
     return response.data;

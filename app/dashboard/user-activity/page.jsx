@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { toast } from "react-toastify";
 import { UserPlus, LogIn, Activity } from "lucide-react";
 
@@ -77,9 +78,10 @@ const UserActivityPage = () => {
         ) : (
           <div className="flex flex-col gap-2">
             {filteredEvents.map((e, i) => (
-              <div
+              <Link
                 key={`${e.type}-${e.userId}-${i}`}
-                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
+                href={`/dashboard/users/${e.userId}`}
+                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 hover:border-indigo-200 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-indigo-500/30"
               >
                 <span
                   className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
@@ -100,7 +102,7 @@ const UserActivityPage = () => {
                   <p className="truncate text-xs text-slate-400 dark:text-slate-500">{e.email}</p>
                 </div>
                 <span className="shrink-0 text-xs text-slate-400 dark:text-slate-500">{formatDateTime(e.timestamp)}</span>
-              </div>
+              </Link>
             ))}
           </div>
         )}

@@ -4,7 +4,7 @@ import React from "react";
 import { AlertTriangle } from "lucide-react";
 import Modal from "./Modal";
 
-const ConfirmDialog = ({ open, onClose, onConfirm, title, description, confirmLabel = "Delete", loading }) => {
+const ConfirmDialog = ({ open, onClose, onConfirm, title, description, confirmLabel = "Delete", loadingLabel = "Deleting...", loading }) => {
   return (
     <Modal open={open} onClose={onClose} title={title}>
       <div className="flex items-start gap-3">
@@ -25,7 +25,7 @@ const ConfirmDialog = ({ open, onClose, onConfirm, title, description, confirmLa
           disabled={loading}
           className="rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer"
         >
-          {loading ? "Deleting..." : confirmLabel}
+          {loading ? loadingLabel : confirmLabel}
         </button>
       </div>
     </Modal>
