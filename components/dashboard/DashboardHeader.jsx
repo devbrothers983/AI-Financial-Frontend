@@ -3,10 +3,11 @@
 import React from "react";
 import { Menu } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 const DashboardHeader = ({ onMenuClick }) => {
   return (
-    <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-6 py-3 dark:border-slate-800 dark:bg-slate-900">
+    <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6 dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-center gap-3 lg:hidden">
         <button
           onClick={onMenuClick}
@@ -18,7 +19,10 @@ const DashboardHeader = ({ onMenuClick }) => {
         <span className="text-sm font-semibold text-slate-900 dark:text-white">AI Financial Coach</span>
       </div>
 
-      <ThemeToggle className="ml-auto" />
+      <div className="ml-auto flex items-center gap-1">
+        <NotificationBell />
+        <ThemeToggle />
+      </div>
     </header>
   );
 };
