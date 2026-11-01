@@ -40,7 +40,7 @@ const FeedbackPage = () => {
         message: formData.message,
         source: "feedback",
       });
-      toast.success("Thanks! Your feedback has been sent.");
+      toast.success("Thanks! Your feedback has been sent. Replies will appear in My messages.");
       setFormData({ type: FEEDBACK_TYPES[0], message: "" });
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to send feedback");

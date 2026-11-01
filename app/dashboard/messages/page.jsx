@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { Mail, MailOpen, Trash2, Inbox, Headphones, MessageSquare, Reply, Send, Loader2, CornerDownRight } from "lucide-react";
 
 import { getAllMessages, updateMessageReadStatus, replyToMessage, deleteMessage } from "@/services/adminService";
+import { notifyMessagesUpdated } from "@/services/messageService";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import Skeleton from "@/components/Skeleton";
 
@@ -51,6 +52,8 @@ const MessagesPage = () => {
       setMessages(response.messages);
       setUnreadCount(response.unreadCount);
       setPagination(response.pagination);
+      // keep the sidebar badge in step after reads, replies and deletes
+      notifyMessagesUpdated();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to load messages");
     } finally {
@@ -93,13 +96,16 @@ const MessagesPage = () => {
 
     try {
       setSendingReply(true);
-      await replyToMessage(msg._id, replyText.trim());
-      toast.success(`Reply sent to ${msg.email}`);
+      const response = await replyToMessage(msg._id, replyText.trim());
+      if (response.emailSent === false) toast.warning(response.message);
+      else toast.success(`Reply sent to ${msg.email}`);
       setOpenReplyId(null);
       setReplyText("");
       fetchMessages();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to send reply");
+      // a 502 still saved the reply, so show it
+      if (err.response?.status === 502) fetchMessages();
     } finally {
       setSendingReply(false);
     }
@@ -120,7 +126,7 @@ const MessagesPage = () => {
   };
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
       <div className="flex items-center gap-3">
         <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-indigo-600 text-white">
           <Inbox className="h-5 w-5" />
@@ -239,17 +245,27 @@ const MessagesPage = () => {
 
                 {msg.replies?.length > 0 && (
                   <div className="mt-4 flex flex-col gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
-                    {msg.replies.map((r, i) => (
-                      <div key={i} className="flex items-start gap-2 rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800/50">
-                        <CornerDownRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
-                        <div>
-                          <p className="whitespace-pre-wrap text-slate-600 dark:text-slate-400">{r.message}</p>
-                          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-                            {r.repliedBy} · {formatDateTime(r.createdAt)}
-                          </p>
+                    {msg.replies.map((r, i) => {
+                      const fromUser = r.from === "user";
+                      return (
+                        <div
+                          key={r._id || i}
+                          className={`flex items-start gap-2 rounded-lg p-3 text-sm ${
+                            fromUser
+                              ? "border border-emerald-100 bg-emerald-50/60 dark:border-emerald-500/20 dark:bg-emerald-500/5"
+                              : "bg-slate-50 dark:bg-slate-800/50"
+                          }`}
+                        >
+                          <CornerDownRight className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${fromUser ? "text-emerald-500" : "text-slate-400"}`} />
+                          <div className="min-w-0">
+                            <p className="whitespace-pre-wrap text-slate-600 dark:text-slate-400">{r.message}</p>
+                            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                              {fromUser ? `${r.repliedBy} (user) replied` : `${r.repliedBy} · Support`} · {formatDateTime(r.createdAt)}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 

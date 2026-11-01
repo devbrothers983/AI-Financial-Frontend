@@ -60,6 +60,11 @@ export const getAllMessages = async (params) => {
     return response.data;
 };
 
+export const getUnreadMessageCount = async () => {
+    const response = await api.get("/admin/messages/unread-count");
+    return response.data;
+};
+
 export const updateMessageReadStatus = async (id, isRead) => {
     const response = await api.put(`/admin/messages/${id}/read`, { isRead });
     return response.data;

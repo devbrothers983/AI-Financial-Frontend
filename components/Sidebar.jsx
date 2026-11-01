@@ -24,11 +24,14 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  Inbox,
 } from "lucide-react";
 
 import Logo from "./Logo";
 import Skeleton from "./Skeleton";
 import { logout } from "@/slices/authSlice";
+import { getMyUnreadCount, MESSAGES_UPDATED_EVENT } from "@/services/messageService";
+import { getUnreadMessageCount } from "@/services/adminService";
 
 const USER_GROUPS = [
   {
@@ -45,6 +48,7 @@ const USER_GROUPS = [
   {
     label: "Support",
     items: [
+      { href: "/dashboard/inbox", label: "My messages", icon: Inbox, badge: "inbox" },
       { href: "/contact", label: "Help & Support", icon: Headphones },
       { href: "/dashboard/feedback", label: "Feedback", icon: MessageSquare },
     ],
@@ -81,11 +85,43 @@ const ADMIN_GROUPS = [
   },
   {
     label: "Feedback",
-    items: [{ href: "/dashboard/messages", label: "Messages", icon: MessageSquare }],
+    items: [{ href: "/dashboard/messages", label: "Messages", icon: MessageSquare, badge: "adminMessages" }],
   },
 ];
 
-const NavLink = ({ item, active, collapsed, accentIconClass, onNavigate }) => {
+const UNREAD_POLL_MS = 60000;
+
+// Unread count for the sidebar badge: the user's inbox, or the admin's messages
+const useUnreadCount = (isAdmin, enabled, pathname) => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const response = isAdmin ? await getUnreadMessageCount() : await getMyUnreadCount();
+        if (!cancelled) setCount(response.unreadCount || 0);
+      } catch {
+        // a badge isn't worth an error toast
+      }
+    };
+
+    load();
+    const timer = setInterval(load, UNREAD_POLL_MS);
+    window.addEventListener(MESSAGES_UPDATED_EVENT, load);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+      window.removeEventListener(MESSAGES_UPDATED_EVENT, load);
+    };
+  }, [isAdmin, enabled, pathname]);
+
+  return enabled ? count : 0;
+};
+
+const NavLink = ({ item, active, collapsed, accentIconClass, onNavigate, badgeCount = 0 }) => {
   if (item.comingSoon) {
     return (
       <div
@@ -116,8 +152,16 @@ const NavLink = ({ item, active, collapsed, accentIconClass, onNavigate }) => {
         collapsed ? "justify-center" : "gap-3"
       } ${active ? "bg-slate-800 text-white" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
     >
-      <item.icon className={`h-4 w-4 shrink-0 ${active ? accentIconClass : ""}`} />
-      {!collapsed && item.label}
+      <span className="relative shrink-0">
+        <item.icon className={`h-4 w-4 ${active ? accentIconClass : ""}`} />
+        {collapsed && badgeCount > 0 && <span className="absolute -right-1.5 -top-1.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-slate-900" />}
+      </span>
+      {!collapsed && <span className="flex-1">{item.label}</span>}
+      {!collapsed && badgeCount > 0 && (
+        <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+          {badgeCount > 99 ? "99+" : badgeCount}
+        </span>
+      )}
     </Link>
   );
 };
@@ -131,6 +175,7 @@ const SidebarContent = ({ collapsed, onToggleCollapsed, onNavigate }) => {
   const isAdmin = user?.role === "admin";
   const groups = isAdmin ? ADMIN_GROUPS : USER_GROUPS;
   const accentIconClass = isAdmin ? "text-indigo-400" : "text-emerald-400";
+  const unreadCount = useUnreadCount(isAdmin, hydrated && Boolean(user), pathname);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -196,6 +241,7 @@ const SidebarContent = ({ collapsed, onToggleCollapsed, onNavigate }) => {
                       collapsed={collapsed}
                       accentIconClass={accentIconClass}
                       onNavigate={onNavigate}
+                      badgeCount={item.badge ? unreadCount : 0}
                     />
                   ))}
                 </div>
