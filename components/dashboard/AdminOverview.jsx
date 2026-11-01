@@ -10,6 +10,7 @@ import Link from "next/link";
 import { getAdminOverview } from "@/services/adminService";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
 import Skeleton from "@/components/Skeleton";
+import GrowthCharts from "@/components/dashboard/GrowthCharts";
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value || 0);
@@ -46,7 +47,7 @@ const AdminOverview = () => {
   const showSkeleton = !hydrated || loading;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
       <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold text-slate-900 dark:text-white">
         <span>Welcome back{hydrated ? "," : ""}</span>
         {hydrated ? <span>{user?.username || "there"} 👋</span> : <Skeleton className="h-6 w-32" />}
@@ -92,6 +93,10 @@ const AdminOverview = () => {
               </div>
               <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{overview?.users?.admins ?? 0}</p>
             </motion.div>
+          </motion.div>
+
+          <motion.div variants={item}>
+            <GrowthCharts />
           </motion.div>
 
           <motion.div variants={item}>

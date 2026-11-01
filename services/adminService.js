@@ -5,6 +5,11 @@ export const getAdminOverview = async () => {
     return response.data;
 };
 
+export const getAdminGrowth = async (params) => {
+    const response = await api.get("/admin/growth", { params });
+    return response.data;
+};
+
 export const getAdminReports = async () => {
     const response = await api.get("/admin/reports");
     return response.data;

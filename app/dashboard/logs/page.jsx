@@ -60,6 +60,7 @@ const ACTION_META = {
   "auth.logout_all": { label: "Signed out everywhere", icon: LogIn, tone: "slate" },
   "auth.account_delete": { label: "Account deleted", icon: ShieldAlert, tone: "red" },
   "message.send": { label: "Message sent", icon: MessageSquare, tone: "sky" },
+  "coach.ask": { label: "AI coach request", icon: Target, tone: "violet" },
   "message.reply": { label: "User replied", icon: MessageSquare, tone: "sky" },
   "profile.password_change": { label: "Password changed", icon: KeyRound, tone: "amber" },
   "profile.update": { label: "Profile updated", icon: UserCog, tone: "slate" },
