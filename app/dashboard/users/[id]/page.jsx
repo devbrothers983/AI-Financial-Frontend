@@ -27,7 +27,9 @@ import {
   KeyRound,
   UserCog,
   Pencil,
+  Download,
 } from "lucide-react";
+import { downloadFromApi } from "@/lib/download";
 
 import {
   getUserById,
@@ -540,18 +542,32 @@ const UserDetailPage = () => {
 
       {tab === "transactions" && (
         <div className="mt-4">
-          <select
-            value={txType}
-            onChange={(e) => {
-              setTxType(e.target.value);
-              setTxPage(1);
-            }}
-            className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-          >
-            <option value="">All types</option>
-            <option value="income">Income</option>
-            <option value="expense">Expense</option>
-          </select>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <select
+              value={txType}
+              onChange={(e) => {
+                setTxType(e.target.value);
+                setTxPage(1);
+              }}
+              className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+            >
+              <option value="">All types</option>
+              <option value="income">Income</option>
+              <option value="expense">Expense</option>
+            </select>
+            <button
+              onClick={async () => {
+                try {
+                  await downloadFromApi(`/admin/users/${user._id}/transactions/export`, undefined, "transactions.csv");
+                } catch {
+                  toast.error("Failed to export transactions");
+                }
+              }}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
+            >
+              <Download className="h-4 w-4" /> Export CSV
+            </button>
+          </div>
 
           <div className="mt-4">
             {txLoading ? (

@@ -19,10 +19,15 @@ import {
   TrendingUp,
   Gift,
   MoreHorizontal,
+  Upload,
+  Download,
+  Loader2,
 } from "lucide-react";
 
 import { getTransactions, deleteTransaction } from "@/services/transactionService";
+import { downloadFromApi } from "@/lib/download";
 import TransactionFormModal from "@/components/transactions/TransactionFormModal";
+import ImportTransactionsModal from "@/components/transactions/ImportTransactionsModal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import Skeleton from "@/components/Skeleton";
 
@@ -65,6 +70,9 @@ const TransactionsPage = () => {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  const [importOpen, setImportOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
   const fetchTransactions = useCallback(async () => {
     try {
       setLoading(true);
@@ -101,6 +109,19 @@ const TransactionsPage = () => {
     setModalOpen(true);
   };
 
+  const handleExport = async () => {
+    try {
+      setExporting(true);
+      // exports everything matching the current type filter, not just this page
+      const params = filters.transactionType ? { transactionType: filters.transactionType } : undefined;
+      await downloadFromApi("/transactions/export", params, "transactions.csv");
+    } catch {
+      toast.error("Failed to export transactions");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const handleDelete = async () => {
     try {
       setDeleting(true);
@@ -116,19 +137,36 @@ const TransactionsPage = () => {
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Transactions</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Track every dollar coming in and going out.</p>
         </div>
-        <button
-          onClick={openAddModal}
-          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-500/20 transition-all hover:shadow-emerald-500/30 hover:brightness-105 cursor-pointer"
-        >
-          <Plus className="h-4 w-4" />
-          Add transaction
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setImportOpen(true)}
+            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
+          >
+            <Upload className="h-4 w-4" />
+            Import
+          </button>
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
+          >
+            {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            Export CSV
+          </button>
+          <button
+            onClick={openAddModal}
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-500/20 transition-all hover:shadow-emerald-500/30 hover:brightness-105 cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+            Add transaction
+          </button>
+        </div>
       </div>
 
       <div className="mt-6 flex flex-wrap gap-3">
@@ -259,6 +297,8 @@ const TransactionsPage = () => {
         onSaved={fetchTransactions}
         transaction={editingTransaction}
       />
+
+      <ImportTransactionsModal open={importOpen} onClose={() => setImportOpen(false)} onImported={fetchTransactions} />
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}

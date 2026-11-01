@@ -5,6 +5,11 @@ export const getTransactions = async (params) => {
     return response.data;
 };
 
+export const importTransactions = async (rows) => {
+    const response = await api.post("/transactions/import", { rows });
+    return response.data;
+};
+
 export const createTransaction = async (data) => {
     const response = await api.post("/transactions/create", data);
     return response.data;

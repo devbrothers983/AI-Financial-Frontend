@@ -4,9 +4,10 @@ import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { Search, ShieldCheck, Shield, UserX, UserCheck, Trash2, Eye, Users as UsersIcon } from "lucide-react";
+import { Search, ShieldCheck, Shield, UserX, UserCheck, Trash2, Eye, Download, Loader2, Users as UsersIcon } from "lucide-react";
 
 import { getAllUsers, updateUserRole, updateUserStatus, deleteUser } from "@/services/adminService";
+import { downloadFromApi } from "@/lib/download";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import Skeleton from "@/components/Skeleton";
 
@@ -103,6 +104,7 @@ const UsersPage = () => {
   const [statusTarget, setStatusTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 400);
@@ -175,6 +177,22 @@ const UsersPage = () => {
     }
   };
 
+  // exports every user matching the current filters, not just this page
+  const handleExport = async () => {
+    try {
+      setExporting(true);
+      const params = {};
+      if (debouncedSearch) params.search = debouncedSearch;
+      if (roleFilter) params.role = roleFilter;
+      if (statusFilter) params.status = statusFilter;
+      await downloadFromApi("/admin/users/export", params, "users.csv");
+    } catch {
+      toast.error("Failed to export users");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const actionHandlers = {
     onRoleToggle: handleRoleToggle,
     onStatus: setStatusTarget,
@@ -183,10 +201,22 @@ const UsersPage = () => {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Users</h1>
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        Search, manage roles, and control account access across the platform.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Users</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Search, manage roles, and control account access across the platform.
+          </p>
+        </div>
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
+        >
+          {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          Export CSV
+        </button>
+      </div>
 
       <div className="mt-6 flex flex-wrap gap-3">
         <div className="relative w-full flex-1 sm:min-w-[200px]">
