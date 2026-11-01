@@ -61,6 +61,7 @@ const ACTION_META = {
   "auth.account_delete": { label: "Account deleted", icon: ShieldAlert, tone: "red" },
   "message.send": { label: "Message sent", icon: MessageSquare, tone: "sky" },
   "coach.ask": { label: "AI coach request", icon: Target, tone: "violet" },
+  "admin.view_as": { label: "Viewed as user", icon: ShieldCheck, tone: "amber" },
   "message.reply": { label: "User replied", icon: MessageSquare, tone: "sky" },
   "profile.password_change": { label: "Password changed", icon: KeyRound, tone: "amber" },
   "profile.update": { label: "Profile updated", icon: UserCog, tone: "slate" },

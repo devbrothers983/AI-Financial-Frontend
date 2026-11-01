@@ -55,6 +55,11 @@ export const updateUserStatus = async (id, isActive) => {
     return response.data;
 };
 
+export const createViewAsToken = async (id) => {
+    const response = await api.post(`/admin/users/${id}/view-as`);
+    return response.data;
+};
+
 export const bulkUserAction = async (ids, action) => {
     const response = await api.post("/admin/users/bulk", { ids, action });
     return response.data;

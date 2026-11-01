@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getViewAs } from "@/lib/viewAs";
 
 
 const api = axios.create({
@@ -12,7 +13,8 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
     if (typeof window !== "undefined") {
-        const token = localStorage.getItem("token");
+        // a "view as user" tab uses its read-only token instead of the admin's
+        const token = getViewAs()?.token || localStorage.getItem("token");
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -41,9 +43,15 @@ api.interceptors.response.use((response) => {
         !(error.config.url || "").startsWith("/auth") &&
         !window.location.pathname.startsWith("/login")
     ) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.href = "/login?session=expired";
+        if (getViewAs()) {
+            // only the view-as session ended; the admin stays signed in
+            sessionStorage.removeItem("viewAs");
+            window.location.href = "/dashboard/users";
+        } else {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            window.location.href = "/login?session=expired";
+        }
     }
     return Promise.reject(error);
 });

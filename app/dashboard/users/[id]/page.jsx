@@ -28,6 +28,7 @@ import {
   UserCog,
   Pencil,
   Download,
+  Eye,
 } from "lucide-react";
 import { downloadFromApi } from "@/lib/download";
 
@@ -38,6 +39,7 @@ import {
   updateUserRole,
   updateUserStatus,
   deleteUser,
+  createViewAsToken,
 } from "@/services/adminService";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import Skeleton from "@/components/Skeleton";
@@ -282,6 +284,25 @@ const UserDetailPage = () => {
   const isSelf = user?.email === currentUser?.email;
   const currency = user?.currency || "USD";
 
+  const handleViewAs = async () => {
+    // open the tab right away (inside the click) so popup blockers allow it
+    const tab = window.open("about:blank", "_blank");
+    try {
+      const response = await createViewAsToken(user._id);
+      const hash = new URLSearchParams({ token: response.token, user: JSON.stringify(response.user) }).toString();
+      const url = `${window.location.origin}/view-as#${hash}`;
+      if (tab) {
+        tab.opener = null;
+        tab.location.href = url;
+      } else {
+        window.location.href = url;
+      }
+    } catch (err) {
+      tab?.close();
+      toast.error(err.response?.data?.message || "Couldn't open the read-only view");
+    }
+  };
+
   const handleRoleToggle = async () => {
     const nextRole = user.role === "admin" ? "user" : "admin";
     try {
@@ -399,7 +420,21 @@ const UserDetailPage = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <button
+              onClick={handleViewAs}
+              disabled={isSelf || user.role === "admin" || !user.isActive}
+              title={
+                user.role === "admin"
+                  ? "Admin accounts can't be viewed this way"
+                  : !user.isActive
+                    ? "Reactivate the account to view it"
+                    : "Open their dashboard in a new tab, read-only"
+              }
+              className={`${actionButton} text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white`}
+            >
+              <Eye className="h-4 w-4" /> View as user
+            </button>
             <button
               onClick={handleRoleToggle}
               disabled={isSelf}

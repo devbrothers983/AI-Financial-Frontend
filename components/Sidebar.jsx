@@ -33,6 +33,7 @@ import Skeleton from "./Skeleton";
 import { logout } from "@/slices/authSlice";
 import { getMyUnreadCount, MESSAGES_UPDATED_EVENT } from "@/services/messageService";
 import { getUnreadMessageCount } from "@/services/adminService";
+import { getViewAs, exitViewAs } from "@/lib/viewAs";
 
 const USER_GROUPS = [
   {
@@ -182,6 +183,11 @@ const SidebarContent = ({ collapsed, onToggleCollapsed, onNavigate }) => {
   const unreadCount = useUnreadCount(isAdmin, hydrated && Boolean(user), pathname);
 
   const handleLogout = () => {
+    // in a "view as user" tab, logging out just ends the view; the admin stays signed in
+    if (getViewAs()) {
+      exitViewAs();
+      return;
+    }
     dispatch(logout());
     router.push("/login");
   };
