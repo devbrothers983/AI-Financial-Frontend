@@ -1,7 +1,7 @@
 import api from "./api";
 
-export const getDashboardOverview = async () => {
-    const response = await api.get("/dashboard/overview");
+export const getDashboardOverview = async (params) => {
+    const response = await api.get("/dashboard/overview", { params });
     return response.data;
 };
 

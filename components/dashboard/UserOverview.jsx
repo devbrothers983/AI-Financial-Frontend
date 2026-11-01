@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, ChevronLeft, ChevronRight, CalendarClock } from "lucide-react";
 
 import { getDashboardOverview } from "@/services/dashboardService";
 import GoalCard from "@/components/GoalCard";
@@ -14,6 +14,9 @@ import Skeleton from "@/components/Skeleton";
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value || 0);
+
+const monthLabel = (month, year) =>
+  new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
 
 const BUDGET_STATUS_STYLES = {
   safe: { bar: "from-emerald-400 to-emerald-500", badge: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400", label: "On track" },
@@ -36,6 +39,8 @@ const UserOverview = () => {
 
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
+  // null = the current month; otherwise { month, year } chosen with the arrows
+  const [period, setPeriod] = useState(null);
 
   useEffect(() => {
     if (!hydrated || !isAuthenticated) return;
@@ -43,7 +48,7 @@ const UserOverview = () => {
     const fetchOverview = async () => {
       try {
         setLoading(true);
-        const response = await getDashboardOverview();
+        const response = await getDashboardOverview(period || undefined);
         setDashboard(response.dashboard);
       } catch (err) {
         const message = err.response?.data?.message || "Failed to load dashboard data";
@@ -54,9 +59,28 @@ const UserOverview = () => {
     };
 
     fetchOverview();
-  }, [hydrated, isAuthenticated]);
+  }, [hydrated, isAuthenticated, period]);
 
   if (hydrated && !isAuthenticated) return null;
+
+  const shownPeriod = dashboard?.period;
+  const isCurrentMonth = shownPeriod?.isCurrentMonth ?? true;
+
+  const shiftMonth = (delta) => {
+    if (!shownPeriod) return;
+    const d = new Date(Date.UTC(shownPeriod.year, shownPeriod.month - 1 + delta, 1));
+    const next = { month: d.getUTCMonth() + 1, year: d.getUTCFullYear() };
+    const today = new Date();
+    const isToday = next.month === today.getUTCMonth() + 1 && next.year === today.getUTCFullYear();
+    setPeriod(isToday ? null : next);
+  };
+
+  const showEmptyMonthHint =
+    !loading &&
+    isCurrentMonth &&
+    dashboard?.lastActiveMonth &&
+    !dashboard?.finances?.totalIncome &&
+    !dashboard?.finances?.totalExpenses;
 
   const showSkeleton = !hydrated || loading;
   const budgetStyle = dashboard?.budget
@@ -69,7 +93,57 @@ const UserOverview = () => {
           <span>Welcome back{hydrated ? "," : ""}</span>
           {hydrated ? <span>{user?.username || "there"} 👋</span> : <Skeleton className="h-6 w-32" />}
         </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Here&apos;s your financial snapshot for this month.</p>
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Here&apos;s your financial snapshot for {isCurrentMonth ? "this month" : "the selected month"}.
+          </p>
+          {shownPeriod && (
+            <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-1 py-0.5 dark:border-slate-700 dark:bg-slate-900">
+              <button
+                onClick={() => shiftMonth(-1)}
+                disabled={loading}
+                aria-label="Previous month"
+                className="rounded-md p-1 text-slate-500 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="min-w-28 text-center text-sm font-medium text-slate-700 dark:text-slate-200">
+                {monthLabel(shownPeriod.month, shownPeriod.year)}
+              </span>
+              <button
+                onClick={() => shiftMonth(1)}
+                disabled={loading || isCurrentMonth}
+                aria-label="Next month"
+                className="rounded-md p-1 text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30 dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          {!isCurrentMonth && (
+            <button
+              onClick={() => setPeriod(null)}
+              className="text-xs font-medium text-emerald-600 hover:underline dark:text-emerald-400 cursor-pointer"
+            >
+              Back to this month
+            </button>
+          )}
+        </div>
+
+        {showEmptyMonthHint && (
+          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+            <CalendarClock className="h-4 w-4 shrink-0 text-emerald-500" />
+            <span className="flex-1">
+              No transactions in {monthLabel(shownPeriod.month, shownPeriod.year)} yet — your earlier data is safe.
+            </span>
+            <button
+              onClick={() => setPeriod(dashboard.lastActiveMonth)}
+              className="font-semibold text-emerald-600 hover:underline dark:text-emerald-400 cursor-pointer"
+            >
+              View {monthLabel(dashboard.lastActiveMonth.month, dashboard.lastActiveMonth.year)}
+            </button>
+          </div>
+        )}
 
         {showSkeleton ? (
           <DashboardSkeleton />
