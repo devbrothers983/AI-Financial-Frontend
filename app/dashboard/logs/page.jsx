@@ -58,6 +58,7 @@ const ACTION_META = {
   "auth.login_blocked": { label: "Blocked sign-in", icon: ShieldAlert, tone: "red" },
   "auth.password_reset": { label: "Password reset", icon: KeyRound, tone: "amber" },
   "auth.logout_all": { label: "Signed out everywhere", icon: LogIn, tone: "slate" },
+  "auth.account_delete": { label: "Account deleted", icon: ShieldAlert, tone: "red" },
   "message.send": { label: "Message sent", icon: MessageSquare, tone: "sky" },
   "message.reply": { label: "User replied", icon: MessageSquare, tone: "sky" },
   "profile.password_change": { label: "Password changed", icon: KeyRound, tone: "amber" },

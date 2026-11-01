@@ -10,6 +10,7 @@ import { updateUser, setToken } from "@/slices/authSlice";
 
 import FormInput from "@/components/auth/FormInput";
 import SecuritySection from "@/components/settings/SecuritySection";
+import DeleteAccountSection from "@/components/settings/DeleteAccountSection";
 import PasswordInput from "@/components/auth/PasswordInput";
 import Skeleton from "@/components/Skeleton";
 
@@ -348,6 +349,8 @@ const SettingsPage = () => {
         </form>
 
         <SecuritySection />
+
+        <DeleteAccountSection hasPassword={Boolean(profile?.hasPassword)} />
       </div>
     </div>
   );

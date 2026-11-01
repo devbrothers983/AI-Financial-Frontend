@@ -25,6 +25,11 @@ export const logoutAllDevices = async () => {
     return response.data;
 };
 
+export const deleteMyAccount = async (data) => {
+    const response = await api.delete("/users/me", { data });
+    return response.data;
+};
+
 export const uploadAvatar = async (file) => {
     const formData = new FormData();
     formData.append("avatar", file);
