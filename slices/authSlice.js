@@ -32,6 +32,15 @@ const authSlice = createSlice({
             }
         },
 
+        // swap in a fresh token, e.g. after "sign out of all devices"
+        setToken: (state, action) => {
+            state.token = action.payload;
+
+            if (typeof window !== "undefined") {
+                localStorage.setItem("token", action.payload);
+            }
+        },
+
         updateUser: (state, action) => {
             state.user = { ...state.user, ...action.payload };
 
@@ -56,6 +65,6 @@ const authSlice = createSlice({
 });
 
 
-export const { hydrateAuth, loginSuccess, updateUser, logout } = authSlice.actions;
+export const { hydrateAuth, loginSuccess, setToken, updateUser, logout } = authSlice.actions;
 
 export default authSlice.reducer;

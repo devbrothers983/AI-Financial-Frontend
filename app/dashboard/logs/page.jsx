@@ -57,6 +57,9 @@ const ACTION_META = {
   "auth.login_failed": { label: "Failed sign-in", icon: ShieldAlert, tone: "red" },
   "auth.login_blocked": { label: "Blocked sign-in", icon: ShieldAlert, tone: "red" },
   "auth.password_reset": { label: "Password reset", icon: KeyRound, tone: "amber" },
+  "auth.logout_all": { label: "Signed out everywhere", icon: LogIn, tone: "slate" },
+  "message.send": { label: "Message sent", icon: MessageSquare, tone: "sky" },
+  "message.reply": { label: "User replied", icon: MessageSquare, tone: "sky" },
   "profile.password_change": { label: "Password changed", icon: KeyRound, tone: "amber" },
   "profile.update": { label: "Profile updated", icon: UserCog, tone: "slate" },
   "profile.avatar_update": { label: "Photo changed", icon: UserCog, tone: "slate" },
@@ -97,6 +100,7 @@ const FILTERS = [
   { value: "budget", label: "Budgets" },
   { value: "goal", label: "Goals" },
   { value: "profile", label: "Profile changes" },
+  { value: "message", label: "Messages" },
   { value: "admin", label: "Admin actions" },
 ];
 

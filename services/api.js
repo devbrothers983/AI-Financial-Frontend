@@ -30,6 +30,22 @@ api.interceptors.response.use((response) => {
         setTimeout(() => window.dispatchEvent(new Event("notifications:updated")), 1500);
     }
     return response;
+}, (error) => {
+    // A signed-in request rejected as unauthenticated means the session ended
+    // (expired, signed out everywhere, or the account was deleted): clear it
+    // and send the user to sign in again.
+    if (
+        typeof window !== "undefined" &&
+        error.response?.status === 401 &&
+        error.config?.headers?.Authorization &&
+        !(error.config.url || "").startsWith("/auth") &&
+        !window.location.pathname.startsWith("/login")
+    ) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/login?session=expired";
+    }
+    return Promise.reject(error);
 });
 
 

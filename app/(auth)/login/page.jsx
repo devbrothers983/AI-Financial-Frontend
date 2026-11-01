@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
@@ -24,6 +24,13 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
 
   const { email, password } = formData;
+
+  // set by the API client when a session ends (expired or signed out elsewhere)
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("session") === "expired") {
+      toast.info("Your session has ended. Please sign in again.", { toastId: "session-expired" });
+    }
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });

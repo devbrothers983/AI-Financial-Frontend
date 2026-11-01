@@ -15,6 +15,16 @@ export const changePassword = async (data) => {
     return response.data;
 };
 
+export const getLoginHistory = async () => {
+    const response = await api.get("/users/me/login-history");
+    return response.data;
+};
+
+export const logoutAllDevices = async () => {
+    const response = await api.post("/users/me/logout-all");
+    return response.data;
+};
+
 export const uploadAvatar = async (file) => {
     const formData = new FormData();
     formData.append("avatar", file);

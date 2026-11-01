@@ -6,9 +6,10 @@ import { toast } from "react-toastify";
 import { User, Mail, Camera, Trash2, Loader2, ArrowRight } from "lucide-react";
 
 import { getProfile, updateProfile, changePassword, uploadAvatar, deleteAvatar } from "@/services/userService";
-import { updateUser } from "@/slices/authSlice";
+import { updateUser, setToken } from "@/slices/authSlice";
 
 import FormInput from "@/components/auth/FormInput";
+import SecuritySection from "@/components/settings/SecuritySection";
 import PasswordInput from "@/components/auth/PasswordInput";
 import Skeleton from "@/components/Skeleton";
 
@@ -161,8 +162,10 @@ const SettingsPage = () => {
 
     try {
       setSavingPassword(true);
-      await changePassword(passwordForm);
-      toast.success(profile?.hasPassword ? "Password updated" : "Password set successfully");
+      const response = await changePassword(passwordForm);
+      // other devices are signed out; keep this one signed in
+      if (response.token) dispatch(setToken(response.token));
+      toast.success(profile?.hasPassword ? "Password updated. Other devices were signed out." : "Password set successfully");
       setPasswordForm({ currentPassword: "", newPassword: "", confirmNewPassword: "" });
       setProfile((prev) => ({ ...prev, hasPassword: true }));
     } catch (err) {
@@ -343,6 +346,8 @@ const SettingsPage = () => {
             {!savingPassword && <ArrowRight className="h-4 w-4" />}
           </button>
         </form>
+
+        <SecuritySection />
       </div>
     </div>
   );
