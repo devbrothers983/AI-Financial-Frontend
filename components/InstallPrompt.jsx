@@ -4,24 +4,50 @@ import React, { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { Download, X } from "lucide-react";
 
+// Remembered in this browser once the app is installed, so the prompt never
+// comes back — even when the site is later opened in a normal browser tab.
+const INSTALLED_KEY = "pwa-installed";
+
+const isStandalone = () =>
+  typeof window !== "undefined" &&
+  (window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true);
+
+const isInstalled = () => {
+  if (isStandalone()) return true;
+  try {
+    return localStorage.getItem(INSTALLED_KEY) === "true";
+  } catch {
+    return false;
+  }
+};
+
+const markInstalled = () => {
+  try {
+    localStorage.setItem(INSTALLED_KEY, "true");
+  } catch {
+    // storage unavailable (private mode): the standalone check still applies
+  }
+};
+
 const InstallPrompt = () => {
   const { isAuthenticated } = useSelector((state) => state.auth);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [visible, setVisible] = useState(false);
   const wasAuthenticated = useRef(isAuthenticated);
 
-  const isStandalone = () =>
-    typeof window !== "undefined" &&
-    (window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true);
-
   useEffect(() => {
+    // opened as the installed app: remember it for the browser version too
+    if (isStandalone()) markInstalled();
+
     const handleBeforeInstallPrompt = (event) => {
       event.preventDefault();
+      if (isInstalled()) return;
       setDeferredPrompt(event);
-      if (!isStandalone()) setVisible(true);
+      setVisible(true);
     };
 
     const handleAppInstalled = () => {
+      markInstalled();
       setVisible(false);
       setDeferredPrompt(null);
     };
@@ -42,7 +68,7 @@ const InstallPrompt = () => {
     const justLoggedIn = isAuthenticated && !wasAuthenticated.current;
     wasAuthenticated.current = isAuthenticated;
 
-    if (justLoggedIn && deferredPrompt && !isStandalone()) {
+    if (justLoggedIn && deferredPrompt && !isInstalled()) {
       setVisible(true);
     }
   }, [isAuthenticated, deferredPrompt]);
@@ -50,7 +76,8 @@ const InstallPrompt = () => {
   const handleInstall = async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") markInstalled();
     setDeferredPrompt(null);
     setVisible(false);
   };
