@@ -50,6 +50,11 @@ export const updateUserStatus = async (id, isActive) => {
     return response.data;
 };
 
+export const bulkUserAction = async (ids, action) => {
+    const response = await api.post("/admin/users/bulk", { ids, action });
+    return response.data;
+};
+
 export const deleteUser = async (id) => {
     const response = await api.delete(`/admin/users/${id}`);
     return response.data;

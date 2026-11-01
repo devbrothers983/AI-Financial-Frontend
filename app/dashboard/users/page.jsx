@@ -6,7 +6,7 @@ import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { Search, ShieldCheck, Shield, UserX, UserCheck, Trash2, Eye, Download, Loader2, Users as UsersIcon } from "lucide-react";
 
-import { getAllUsers, updateUserRole, updateUserStatus, deleteUser } from "@/services/adminService";
+import { getAllUsers, updateUserRole, updateUserStatus, deleteUser, bulkUserAction } from "@/services/adminService";
 import { downloadFromApi } from "@/lib/download";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import Skeleton from "@/components/Skeleton";
@@ -106,6 +106,9 @@ const UsersPage = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
 
+  const [selected, setSelected] = useState([]);
+  const [bulkAction, setBulkAction] = useState(null);
+
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 400);
     return () => clearTimeout(timer);
@@ -121,6 +124,7 @@ const UsersPage = () => {
 
       const response = await getAllUsers(params);
       setUsers(response.users);
+      setSelected([]);
       setPagination(response.pagination);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to load users");
@@ -199,6 +203,38 @@ const UsersPage = () => {
     onDelete: setDeleteTarget,
   };
 
+  // ---- bulk selection (current page only; your own account can't be selected)
+  const selectableIds = users.filter((u) => u.email !== currentUser?.email).map((u) => u._id);
+  const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.includes(id));
+
+  const toggleSelected = (id) =>
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  const toggleSelectAll = () => setSelected(allSelected ? [] : selectableIds);
+
+  const handleBulkConfirm = async () => {
+    try {
+      setActionLoading(true);
+      const response = await bulkUserAction(selected, bulkAction);
+      toast.success(response.message);
+      setBulkAction(null);
+      setSelected([]);
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Bulk action failed");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const BULK_COPY = {
+    activate: { title: "Reactivate users?", label: "Reactivate", text: "will be able to sign in again." },
+    deactivate: { title: "Deactivate users?", label: "Deactivate", text: "will be signed out and blocked from signing in." },
+    delete: { title: "Delete users?", label: "Delete", text: "and all of their data will be permanently deleted. This cannot be undone." },
+  };
+
+  const checkboxClass = "h-4 w-4 cursor-pointer rounded accent-indigo-600 disabled:cursor-not-allowed disabled:opacity-30";
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -241,7 +277,46 @@ const UsersPage = () => {
         </select>
       </div>
 
+      {selected.length > 0 && (
+        <div className="sticky top-2 z-20 mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 shadow-sm dark:border-indigo-500/30 dark:bg-indigo-950">
+          <span className="mr-auto text-sm font-medium text-indigo-900 dark:text-indigo-100">
+            {selected.length} selected
+          </span>
+          <button
+            onClick={() => setBulkAction("activate")}
+            className="flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+          >
+            <UserCheck className="h-3.5 w-3.5" /> Reactivate
+          </button>
+          <button
+            onClick={() => setBulkAction("deactivate")}
+            className="flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-50 dark:bg-slate-900 dark:text-amber-400 dark:hover:bg-slate-800 cursor-pointer"
+          >
+            <UserX className="h-3.5 w-3.5" /> Deactivate
+          </button>
+          <button
+            onClick={() => setBulkAction("delete")}
+            className="flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-slate-800 cursor-pointer"
+          >
+            <Trash2 className="h-3.5 w-3.5" /> Delete
+          </button>
+          <button
+            onClick={() => setSelected([])}
+            className="rounded-lg px-2 py-1.5 text-xs font-medium text-indigo-700 hover:underline dark:text-indigo-300 cursor-pointer"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
       <div className="mt-6">
+        {/* select-all for the mobile cards */}
+        {!loading && selectableIds.length > 0 && (
+          <label className="mb-3 flex cursor-pointer items-center gap-2 text-sm text-slate-600 md:hidden dark:text-slate-400">
+            <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} className={checkboxClass} />
+            Select all on this page
+          </label>
+        )}
         {loading ? (
           <div className="flex flex-col gap-3">
             {[0, 1, 2, 3, 4].map((i) => (
@@ -265,7 +340,15 @@ const UsersPage = () => {
                     className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={selected.includes(u._id)}
+                        onChange={() => toggleSelected(u._id)}
+                        disabled={isSelf}
+                        aria-label={`Select ${u.username}`}
+                        className={`${checkboxClass} mt-1 shrink-0`}
+                      />
+                      <div className="min-w-0 flex-1">
                         <p className="truncate font-medium text-slate-900 dark:text-white">
                           {u.username} {isSelf && <span className="text-xs text-slate-400">(you)</span>}
                         </p>
@@ -293,6 +376,16 @@ const UsersPage = () => {
               <table className="w-full text-left text-sm">
                 <thead className="bg-slate-50 text-xs uppercase text-slate-400 dark:bg-slate-800/50 dark:text-slate-500">
                   <tr>
+                    <th className="w-10 py-3 pl-4">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={toggleSelectAll}
+                        disabled={!selectableIds.length}
+                        aria-label="Select all on this page"
+                        className={checkboxClass}
+                      />
+                    </th>
                     <th className="px-4 py-3 font-medium">User</th>
                     <th className="px-4 py-3 font-medium">Role</th>
                     <th className="px-4 py-3 font-medium">Status</th>
@@ -305,7 +398,17 @@ const UsersPage = () => {
                   {users.map((u) => {
                     const isSelf = u.email === currentUser?.email;
                     return (
-                      <tr key={u._id}>
+                      <tr key={u._id} className={selected.includes(u._id) ? "bg-indigo-50/50 dark:bg-indigo-500/5" : ""}>
+                        <td className="py-3 pl-4">
+                          <input
+                            type="checkbox"
+                            checked={selected.includes(u._id)}
+                            onChange={() => toggleSelected(u._id)}
+                            disabled={isSelf}
+                            aria-label={`Select ${u.username}`}
+                            className={checkboxClass}
+                          />
+                        </td>
                         <td className="px-4 py-3">
                           <Link href={`/dashboard/users/${u._id}`} className="group">
                             <p className="font-medium text-slate-900 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400">
@@ -372,6 +475,17 @@ const UsersPage = () => {
             : `${statusTarget?.username} will be able to log in again.`
         }
         confirmLabel={statusTarget?.isActive ? "Deactivate" : "Reactivate"}
+      />
+
+      <ConfirmDialog
+        open={Boolean(bulkAction)}
+        onClose={() => setBulkAction(null)}
+        onConfirm={handleBulkConfirm}
+        loading={actionLoading}
+        loadingLabel="Working..."
+        title={BULK_COPY[bulkAction]?.title}
+        description={`${selected.length} selected ${selected.length === 1 ? "user" : "users"} ${BULK_COPY[bulkAction]?.text || ""}`}
+        confirmLabel={BULK_COPY[bulkAction]?.label}
       />
 
       <ConfirmDialog
