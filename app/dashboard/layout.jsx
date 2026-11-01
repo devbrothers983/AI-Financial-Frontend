@@ -6,8 +6,16 @@ import { useSelector } from "react-redux";
 
 import Sidebar from "@/components/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import AnnouncementBanner from "@/components/dashboard/AnnouncementBanner";
 
-const ADMIN_ONLY_PREFIXES = ["/dashboard/users", "/dashboard/user-activity", "/dashboard/security", "/dashboard/logs", "/dashboard/messages"];
+const ADMIN_ONLY_PREFIXES = [
+  "/dashboard/users",
+  "/dashboard/user-activity",
+  "/dashboard/security",
+  "/dashboard/logs",
+  "/dashboard/messages",
+  "/dashboard/announcements",
+];
 
 export default function DashboardLayout({ children }) {
   const router = useRouter();
@@ -36,7 +44,10 @@ export default function DashboardLayout({ children }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 overflow-y-auto">
+          {hydrated && isAuthenticated && <AnnouncementBanner />}
+          {children}
+        </main>
       </div>
     </div>
   );

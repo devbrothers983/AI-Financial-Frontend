@@ -25,6 +25,7 @@ import {
   ChevronRight,
   X,
   Inbox,
+  Megaphone,
 } from "lucide-react";
 
 import Logo from "./Logo";
@@ -85,7 +86,10 @@ const ADMIN_GROUPS = [
   },
   {
     label: "Feedback",
-    items: [{ href: "/dashboard/messages", label: "Messages", icon: MessageSquare, badge: "adminMessages" }],
+    items: [
+      { href: "/dashboard/messages", label: "Messages", icon: MessageSquare, badge: "adminMessages" },
+      { href: "/dashboard/announcements", label: "Announcements", icon: Megaphone },
+    ],
   },
 ];
 
