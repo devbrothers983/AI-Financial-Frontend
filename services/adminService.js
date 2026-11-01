@@ -15,6 +15,11 @@ export const getUserActivity = async () => {
     return response.data;
 };
 
+export const getActivityLogs = async (params) => {
+    const response = await api.get("/admin/logs", { params });
+    return response.data;
+};
+
 export const getAllUsers = async (params) => {
     const response = await api.get("/admin/users", { params });
     return response.data;

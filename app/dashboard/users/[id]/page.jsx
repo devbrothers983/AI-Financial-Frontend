@@ -23,6 +23,10 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   PieChart,
+  ShieldAlert,
+  KeyRound,
+  UserCog,
+  Pencil,
 } from "lucide-react";
 
 import {
@@ -68,7 +72,8 @@ const ACTIVITY_FILTERS = [
   { value: "budget", label: "Budgets", countKey: "budgetCount" },
   { value: "goal", label: "Goals", countKey: "goalCount" },
   { value: "message", label: "Messages", countKey: "messageCount" },
-  { value: "account", label: "Account" },
+  { value: "account", label: "Sign-ins & account" },
+  { value: "admin", label: "Admin actions" },
 ];
 
 const EVENT_STYLE = {
@@ -81,17 +86,52 @@ const EVENT_STYLE = {
   "message:feedback": { icon: MessageSquare, tone: "bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400" },
   "account:signup": { icon: UserPlus, tone: "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400" },
   "account:login": { icon: LogIn, tone: "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400" },
+  "account:login_failed": { icon: ShieldAlert, tone: "bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400" },
+  "account:login_blocked": { icon: ShieldAlert, tone: "bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400" },
+  "account:password_reset": { icon: KeyRound, tone: "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400" },
+  "account:password_change": { icon: KeyRound, tone: "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400" },
+};
+
+// Fallbacks by type, for edits/deletes and anything not listed above
+const TYPE_STYLE = {
+  transaction: { icon: Receipt, tone: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300" },
+  budget: EVENT_STYLE["budget:created"],
+  goal: EVENT_STYLE["goal:created"],
+  message: EVENT_STYLE["message:contact"],
+  account: { icon: UserCog, tone: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300" },
+  admin: { icon: ShieldCheck, tone: "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400" },
 };
 
 const DEFAULT_STYLE = { icon: Activity, tone: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400" };
+
+const DELETE_STYLE_TONE = "bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400";
+
+const getEventStyle = (e) => {
+  const exact = EVENT_STYLE[`${e.type}:${e.action}`];
+  if (exact) return exact;
+  const base = TYPE_STYLE[e.type] || DEFAULT_STYLE;
+  if (e.action === "delete" || e.action === "user_delete") return { icon: Trash2, tone: DELETE_STYLE_TONE };
+  if (e.action === "update") return { ...base, icon: Pencil };
+  return base;
+};
 
 const Chip = ({ children, className = "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300" }) => (
   <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-medium capitalize ${className}`}>{children}</span>
 );
 
+// Who / where chips from the activity log (admin name, device, IP)
+const SourceChips = ({ meta = {} }) => (
+  <>
+    {meta.by && <Chip className="bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">By {meta.by}</Chip>}
+    {meta.device && <Chip>{meta.device}</Chip>}
+    {meta.ip && <Chip className="bg-slate-100 font-mono normal-case text-slate-500 dark:bg-slate-800 dark:text-slate-400">{meta.ip}</Chip>}
+  </>
+);
+
 // Small detail chips under each timeline entry, depending on its type
 const EventChips = ({ event }) => {
   const m = event.meta || {};
+  if (m.by || m.device || m.ip) return <SourceChips meta={m} />;
   if (event.type === "transaction") {
     return (
       <>
@@ -454,7 +494,7 @@ const UserDetailPage = () => {
                     </h3>
                     <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
                       {group.items.map((e, i) => {
-                        const style = EVENT_STYLE[`${e.type}:${e.action}`] || DEFAULT_STYLE;
+                        const style = getEventStyle(e);
                         const Icon = style.icon;
                         const amountTone =
                           e.action === "income"
