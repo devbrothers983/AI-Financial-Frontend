@@ -1,5 +1,10 @@
 import api from "./api";
 
+export const getBankAccess = async () => {
+    const response = await api.get("/bank/access");
+    return response.data;
+};
+
 export const getBankConnections = async () => {
     const response = await api.get("/bank/connections");
     return response.data;

@@ -97,7 +97,9 @@ const BanksPage = () => {
       setConnections(response.connections);
       setEnabled(response.enabled);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to load bank connections");
+      // not on the tester list: show the same "not available" message
+      if (err.response?.status === 403) setEnabled(false);
+      else toast.error(err.response?.data?.message || "Failed to load bank connections");
     } finally {
       setLoading(false);
     }

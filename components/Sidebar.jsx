@@ -35,13 +35,14 @@ import { logout } from "@/slices/authSlice";
 import { getMyUnreadCount, MESSAGES_UPDATED_EVENT } from "@/services/messageService";
 import { getUnreadMessageCount } from "@/services/adminService";
 import { getViewAs, exitViewAs } from "@/lib/viewAs";
+import { getBankAccess } from "@/services/bankService";
 
 const USER_GROUPS = [
   {
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/dashboard/transactions", label: "Transactions", icon: ArrowLeftRight },
-      { href: "/dashboard/banks", label: "Connected banks", icon: Landmark },
+      { href: "/dashboard/banks", label: "Connected banks", icon: Landmark, requiresBankAccess: true },
       { href: "/dashboard/budgets", label: "Budgets", icon: PieChart },
       { href: "/dashboard/goals", label: "Goals", icon: Target },
       { href: "/dashboard/coach", label: "AI Coach", icon: Sparkles },
@@ -128,6 +129,26 @@ const useUnreadCount = (isAdmin, enabled, pathname) => {
   return enabled ? count : 0;
 };
 
+// Whether this user sees the Connected banks link (admins don't have it)
+const useBankAccess = (enabled) => {
+  const [available, setAvailable] = useState(false);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    getBankAccess()
+      .then((response) => {
+        if (!cancelled) setAvailable(Boolean(response.available));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled]);
+
+  return available;
+};
+
 const NavLink = ({ item, active, collapsed, accentIconClass, onNavigate, badgeCount = 0 }) => {
   if (item.comingSoon) {
     return (
@@ -183,6 +204,7 @@ const SidebarContent = ({ collapsed, onToggleCollapsed, onNavigate }) => {
   const groups = isAdmin ? ADMIN_GROUPS : USER_GROUPS;
   const accentIconClass = isAdmin ? "text-indigo-400" : "text-emerald-400";
   const unreadCount = useUnreadCount(isAdmin, hydrated && Boolean(user), pathname);
+  const hasBankAccess = useBankAccess(hydrated && Boolean(user) && !isAdmin);
 
   const handleLogout = () => {
     // in a "view as user" tab, logging out just ends the view; the admin stays signed in
@@ -245,7 +267,7 @@ const SidebarContent = ({ collapsed, onToggleCollapsed, onNavigate }) => {
                 )}
                 {group.label && collapsed && <div className="mb-2 h-px bg-white/10" />}
                 <div className="space-y-1">
-                  {group.items.map((item) => (
+                  {group.items.filter((item) => !item.requiresBankAccess || hasBankAccess).map((item) => (
                     <NavLink
                       key={item.label}
                       item={item}
