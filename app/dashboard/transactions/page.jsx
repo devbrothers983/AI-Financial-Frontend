@@ -22,6 +22,8 @@ import {
   Upload,
   Download,
   Loader2,
+  Landmark,
+  AlertTriangle,
 } from "lucide-react";
 
 import { getTransactions, deleteTransaction } from "@/services/transactionService";
@@ -236,6 +238,29 @@ const TransactionsPage = () => {
                       <p className="text-xs capitalize text-slate-400 dark:text-slate-500">
                         {transaction.transactionCategory} · {formatDate(transaction.transactionDate)}
                       </p>
+                      {transaction.source === "bank" && (
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                          <span
+                            title={transaction.bankAccountName || "Imported from your bank"}
+                            className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-1.5 py-0.5 text-[11px] font-medium text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400"
+                          >
+                            <Landmark className="h-3 w-3" /> {transaction.bankAccountName || "Bank"}
+                          </span>
+                          {transaction.isPending && (
+                            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                              Pending
+                            </span>
+                          )}
+                          {transaction.possibleDuplicateOf && (
+                            <span
+                              title="A transaction you entered yourself has the same amount within 2 days. If it's the same purchase, delete one of them."
+                              className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-400"
+                            >
+                              <AlertTriangle className="h-3 w-3" /> Possible duplicate
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className={`shrink-0 text-sm font-semibold ${isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-white"}`}>
@@ -243,7 +268,8 @@ const TransactionsPage = () => {
                       {formatCurrency(transaction.transactionAmount)}
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    {/* always visible on touch screens, where there's no hover */}
+                    <div className="flex shrink-0 items-center gap-1 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100">
                       <button
                         onClick={() => openEditModal(transaction)}
                         className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200 cursor-pointer"
