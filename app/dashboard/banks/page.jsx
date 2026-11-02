@@ -275,6 +275,11 @@ const BanksPage = () => {
                         <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${status.className}`}>{status.label}</span>
                       </div>
                       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Last updated: {formatDateTime(c.lastSyncedAt)}</p>
+                      {c.status === "active" && c.lastErrorCode && (
+                        <p className="mt-1 flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
+                          <AlertTriangle className="h-3 w-3 shrink-0" /> The last update had a problem. We&apos;ll try again automatically.
+                        </p>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {c.status === "active" ? (
