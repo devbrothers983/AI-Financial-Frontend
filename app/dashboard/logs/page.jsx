@@ -61,6 +61,9 @@ const ACTION_META = {
   "auth.account_delete": { label: "Account deleted", icon: ShieldAlert, tone: "red" },
   "message.send": { label: "Message sent", icon: MessageSquare, tone: "sky" },
   "coach.ask": { label: "AI coach request", icon: Target, tone: "violet" },
+  "subscription.create": { label: "Subscription added", icon: Wallet, tone: "sky" },
+  "subscription.cancel": { label: "Subscription cancelled", icon: Wallet, tone: "slate" },
+  "subscription.delete": { label: "Subscription removed", icon: Wallet, tone: "slate" },
   "bank.connect": { label: "Bank connected", icon: Wallet, tone: "green" },
   "bank.disconnect": { label: "Bank disconnected", icon: Wallet, tone: "slate" },
   "admin.view_as": { label: "Viewed as user", icon: ShieldCheck, tone: "amber" },
@@ -105,6 +108,7 @@ const FILTERS = [
   { value: "budget", label: "Budgets" },
   { value: "goal", label: "Goals" },
   { value: "profile", label: "Profile changes" },
+  { value: "subscription", label: "Subscriptions" },
   { value: "message", label: "Messages" },
   { value: "admin", label: "Admin actions" },
 ];

@@ -27,6 +27,7 @@ import {
   Inbox,
   Megaphone,
   Landmark,
+  Repeat,
 } from "lucide-react";
 
 import Logo from "./Logo";
@@ -42,6 +43,7 @@ const USER_GROUPS = [
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/dashboard/transactions", label: "Transactions", icon: ArrowLeftRight },
+      { href: "/dashboard/subscriptions", label: "Subscriptions", icon: Repeat },
       { href: "/dashboard/banks", label: "Connected banks", icon: Landmark, requiresBankAccess: true },
       { href: "/dashboard/budgets", label: "Budgets", icon: PieChart },
       { href: "/dashboard/goals", label: "Goals", icon: Target },
