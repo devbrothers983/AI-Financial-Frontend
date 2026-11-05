@@ -7,14 +7,12 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import { createBudget, updateBudget } from "@/services/budgetService";
 import { getGoals } from "@/services/goalService";
+import { useCategories, formatCategory } from "@/lib/useCategories";
 
-const EXPENSE_CATEGORIES = ["food", "groceries", "entertainment", "transportation", "bills", "other"];
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
-
-const formatLabel = (value) => value.charAt(0).toUpperCase() + value.slice(1);
 
 const now = new Date();
 
@@ -39,6 +37,7 @@ const BudgetFormModal = ({ open, onClose, onSaved, budget }) => {
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [goals, setGoals] = useState([]);
+  const { expense: expenseCategories } = useCategories();
 
   useEffect(() => {
     if (!open) return;
@@ -49,7 +48,8 @@ const BudgetFormModal = ({ open, onClose, onSaved, budget }) => {
             month: budget.month,
             year: budget.year,
             totalBudget: budget.totalBudget,
-            categories: budget.categories?.map((c) => ({ category: c.category, limit: c.limit })) || [],
+            // saved as "Food" but listed as "food", so it needs to match when editing
+            categories: budget.categories?.map((c) => ({ category: c.category.toLowerCase(), limit: c.limit })) || [],
             linkedGoal: budget.linkedGoal?._id || budget.linkedGoal || "",
           }
         : defaultFormState
@@ -78,7 +78,7 @@ const BudgetFormModal = ({ open, onClose, onSaved, budget }) => {
   const addCategoryRow = () => {
     setFormData((prev) => ({
       ...prev,
-      categories: [...prev.categories, { category: EXPENSE_CATEGORIES[0], limit: "" }],
+      categories: [...prev.categories, { category: expenseCategories[0], limit: "" }],
     }));
   };
 
@@ -238,9 +238,9 @@ const BudgetFormModal = ({ open, onClose, onSaved, budget }) => {
                     onChange={(e) => handleCategoryChange(i, "category", e.target.value)}
                     className={`cursor-pointer ${inputClass(false)}`}
                   >
-                    {EXPENSE_CATEGORIES.map((cat) => (
+                    {[...new Set([...expenseCategories, c.category])].map((cat) => (
                       <option key={cat} value={cat}>
-                        {formatLabel(cat)}
+                        {formatCategory(cat)}
                       </option>
                     ))}
                   </select>

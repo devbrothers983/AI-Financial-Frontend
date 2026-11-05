@@ -7,17 +7,9 @@ import { Loader2 } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import { createSubscription, updateSubscription } from "@/services/subscriptionService";
 import { normalizeLink, siteName, linkMatchesName } from "@/lib/cancelLinks";
+import { useCategories, formatCategory } from "@/lib/useCategories";
 
 const POPULAR = ["Netflix", "Spotify", "YouTube Premium", "Udemy", "Amazon Prime", "iCloud", "ChatGPT", "Gym"];
-
-const CATEGORIES = [
-  { value: "entertainment", label: "Entertainment" },
-  { value: "bills", label: "Bills" },
-  { value: "food", label: "Food" },
-  { value: "groceries", label: "Groceries" },
-  { value: "transportation", label: "Transportation" },
-  { value: "other", label: "Other" },
-];
 
 const REMINDERS = [
   { value: 0, label: "No reminder" },
@@ -38,7 +30,7 @@ const blankForm = () => ({
   amount: "",
   frequency: "monthly",
   nextChargeDate: "",
-  category: "other",
+  category: "subscriptions",
   remindDaysBefore: 3,
   isTrial: false,
   autoAddExpense: false,
@@ -49,6 +41,7 @@ const blankForm = () => ({
 const SubscriptionFormModal = ({ open, onClose, onSaved, subscription }) => {
   const [form, setForm] = useState(blankForm);
   const [saving, setSaving] = useState(false);
+  const { expense: expenseCategories } = useCategories();
 
   const isEditing = Boolean(subscription?._id);
   const typedLink = normalizeLink(form.manageUrl);
@@ -62,7 +55,8 @@ const SubscriptionFormModal = ({ open, onClose, onSaved, subscription }) => {
         amount: subscription.amount ?? "",
         frequency: subscription.frequency || "monthly",
         nextChargeDate: toDateInput(subscription.nextChargeDate),
-        category: subscription.category || "other",
+        // a charge we found often sits in "other", which isn't a useful place for it
+        category: subscription.category && subscription.category !== "other" ? subscription.category : "subscriptions",
         remindDaysBefore: subscription.remindDaysBefore ?? 3,
         isTrial: Boolean(subscription.isTrial),
         autoAddExpense: Boolean(subscription.autoAddExpense),
@@ -177,9 +171,9 @@ const SubscriptionFormModal = ({ open, onClose, onSaved, subscription }) => {
           <label className={labelClass}>
             Category for the expense
             <select value={form.category} onChange={setField("category")} className={`${fieldClass} cursor-pointer`}>
-              {CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
+              {[...new Set([...expenseCategories, form.category])].map((name) => (
+                <option key={name} value={name}>
+                  {formatCategory(name)}
                 </option>
               ))}
             </select>

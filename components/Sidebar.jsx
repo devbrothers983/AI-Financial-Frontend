@@ -28,6 +28,7 @@ import {
   Megaphone,
   Landmark,
   Repeat,
+  Tags,
 } from "lucide-react";
 
 import Logo from "./Logo";
@@ -44,6 +45,7 @@ const USER_GROUPS = [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/dashboard/transactions", label: "Transactions", icon: ArrowLeftRight },
       { href: "/dashboard/subscriptions", label: "Subscriptions", icon: Repeat },
+      { href: "/dashboard/categories", label: "Categories", icon: Tags },
       { href: "/dashboard/banks", label: "Connected banks", icon: Landmark, requiresBankAccess: true },
       { href: "/dashboard/budgets", label: "Budgets", icon: PieChart },
       { href: "/dashboard/goals", label: "Goals", icon: Target },

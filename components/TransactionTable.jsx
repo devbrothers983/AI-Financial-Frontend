@@ -12,6 +12,7 @@ import {
     TrendingUp,
     Gift,
     MoreHorizontal,
+    Repeat,
 } from "lucide-react";
 
 const CATEGORY_ICONS = {
@@ -24,6 +25,7 @@ const CATEGORY_ICONS = {
     freelance: Laptop,
     investment: TrendingUp,
     gift: Gift,
+    subscriptions: Repeat,
     other: MoreHorizontal,
 };
 

@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { toast } from "react-toastify";
 import { Loader2, AlertTriangle, ArrowLeft } from "lucide-react";
 
 import Modal from "@/components/ui/Modal";
 import { createTransaction, updateTransaction } from "@/services/transactionService";
 import { checkExpenseImpact } from "@/services/budgetService";
+import { useCategories } from "@/lib/useCategories";
 
-const EXPENSE_CATEGORIES = ["food", "groceries", "entertainment", "transportation", "bills", "other"];
-const INCOME_CATEGORIES = ["salary", "freelance", "investment", "gift", "other"];
 const PAYMENT_METHODS = ["cash", "credit_card", "debit_card", "bank_transfer", "other"];
 const FREQUENCIES = ["daily", "weekly", "monthly", "yearly"];
 
@@ -38,10 +38,15 @@ const TransactionFormModal = ({ open, onClose, onSaved, transaction }) => {
   const [impact, setImpact] = useState(null);
   const [pendingPayload, setPendingPayload] = useState(null);
 
-  const categories = formData.transactionType === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  const { expense: expenseCategories, income: incomeCategories } = useCategories();
+  const typeCategories = formData.transactionType === "income" ? incomeCategories : expenseCategories;
+  // keeps a transaction's current category listed, even if it's not in this type's list
+  const categories = typeCategories.includes(formData.transactionCategory)
+    ? typeCategories
+    : [...typeCategories, formData.transactionCategory];
 
   const handleTypeChange = (type) => {
-    const nextCategories = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+    const nextCategories = type === "income" ? incomeCategories : expenseCategories;
     setFormData((prev) => ({
       ...prev,
       transactionType: type,
@@ -92,14 +97,15 @@ const TransactionFormModal = ({ open, onClose, onSaved, transaction }) => {
   const submitTransaction = async (payload) => {
     try {
       setSaving(true);
+      let response;
       if (isEdit) {
-        await updateTransaction(transaction._id, payload);
+        response = await updateTransaction(transaction._id, payload);
         toast.success("Transaction updated");
       } else {
-        await createTransaction(payload);
+        response = await createTransaction(payload);
         toast.success("Transaction added");
       }
-      onSaved();
+      onSaved(response);
       onClose();
     } catch (err) {
       const message = err.response?.data?.message || "Something went wrong. Please try again.";
@@ -316,6 +322,9 @@ const TransactionFormModal = ({ open, onClose, onSaved, transaction }) => {
                 </option>
               ))}
             </select>
+            <Link href="/dashboard/categories" className="text-xs font-medium text-emerald-600 hover:underline dark:text-emerald-400">
+              Manage categories
+            </Link>
           </div>
 
           <div className="flex flex-col gap-1.5">

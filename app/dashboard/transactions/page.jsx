@@ -24,6 +24,7 @@ import {
   Loader2,
   Landmark,
   AlertTriangle,
+  Repeat,
 } from "lucide-react";
 
 import { getTransactions, deleteTransaction } from "@/services/transactionService";
@@ -31,6 +32,9 @@ import { downloadFromApi } from "@/lib/download";
 import TransactionFormModal from "@/components/transactions/TransactionFormModal";
 import ImportTransactionsModal from "@/components/transactions/ImportTransactionsModal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import Modal from "@/components/ui/Modal";
+import { useCategories, formatCategory } from "@/lib/useCategories";
+import { saveCategoryRule } from "@/services/categoryService";
 import Skeleton from "@/components/Skeleton";
 
 const CATEGORY_ICONS = {
@@ -43,6 +47,7 @@ const CATEGORY_ICONS = {
   freelance: Laptop,
   investment: TrendingUp,
   gift: Gift,
+  subscriptions: Repeat,
   other: MoreHorizontal,
 };
 
@@ -74,6 +79,10 @@ const TransactionsPage = () => {
 
   const [importOpen, setImportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+
+  const { all: allCategories } = useCategories();
+  const [ruleSuggestion, setRuleSuggestion] = useState(null);
+  const [savingRule, setSavingRule] = useState(false);
 
   const fetchTransactions = useCallback(async () => {
     try {
@@ -109,6 +118,26 @@ const TransactionsPage = () => {
   const openEditModal = (transaction) => {
     setEditingTransaction(transaction);
     setModalOpen(true);
+  };
+
+  // Changing a category by hand can offer to remember it for that merchant
+  const handleSaved = (response) => {
+    fetchTransactions();
+    if (response?.ruleSuggestion) setRuleSuggestion(response.ruleSuggestion);
+  };
+
+  const handleSaveRule = async () => {
+    try {
+      setSavingRule(true);
+      const response = await saveCategoryRule({ ...ruleSuggestion, applyToExisting: true });
+      toast.success(response.message);
+      setRuleSuggestion(null);
+      fetchTransactions();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Couldn't save this rule");
+    } finally {
+      setSavingRule(false);
+    }
   };
 
   const handleExport = async () => {
@@ -185,9 +214,9 @@ const TransactionsPage = () => {
           className={selectClass}
         >
           <option value="">All categories</option>
-          {Object.keys(CATEGORY_ICONS).map((c) => (
+          {allCategories.map((c) => (
             <option key={c} value={c}>
-              {c.charAt(0).toUpperCase() + c.slice(1)}
+              {formatCategory(c)}
             </option>
           ))}
         </select>
@@ -320,11 +349,35 @@ const TransactionsPage = () => {
       <TransactionFormModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSaved={fetchTransactions}
+        onSaved={handleSaved}
         transaction={editingTransaction}
       />
 
       <ImportTransactionsModal open={importOpen} onClose={() => setImportOpen(false)} onImported={fetchTransactions} />
+
+      <Modal open={Boolean(ruleSuggestion)} onClose={() => setRuleSuggestion(null)} title="Remember this?">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          Always put <span className="font-semibold text-slate-900 dark:text-white">{formatCategory(ruleSuggestion?.matchText)}</span>{" "}
+          under <span className="font-semibold text-slate-900 dark:text-white">{formatCategory(ruleSuggestion?.category)}</span>? This
+          applies to future imports and your other matching transactions.
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            onClick={() => setRuleSuggestion(null)}
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
+          >
+            Just this one
+          </button>
+          <button
+            onClick={handleSaveRule}
+            disabled={savingRule}
+            className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 cursor-pointer"
+          >
+            {savingRule && <Loader2 className="h-4 w-4 animate-spin" />}
+            Yes, always
+          </button>
+        </div>
+      </Modal>
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
