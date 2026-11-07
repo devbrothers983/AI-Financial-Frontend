@@ -15,6 +15,11 @@ export const changePassword = async (data) => {
     return response.data;
 };
 
+export const markAppInstalled = async () => {
+    const response = await api.post("/users/me/app-installed");
+    return response.data;
+};
+
 export const getLoginHistory = async () => {
     const response = await api.get("/users/me/login-history");
     return response.data;

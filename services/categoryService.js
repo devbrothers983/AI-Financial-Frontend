@@ -20,6 +20,11 @@ export const deleteCategory = async (id) => {
     return response.data;
 };
 
+export const sortUncategorized = async () => {
+    const response = await api.post("/categories/sort-uncategorized");
+    return response.data;
+};
+
 export const saveCategoryRule = async (data) => {
     const response = await api.post("/categories/rules", data);
     return response.data;

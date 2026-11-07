@@ -141,7 +141,7 @@ const ImportTransactionsModal = ({ open, onClose, onImported }) => {
           <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={handleFile} className="hidden" />
           <p className="text-xs text-slate-400 dark:text-slate-500">
             Needs at least a date and an amount column. Negative amounts are treated as expenses when there&apos;s no type
-            column; unknown categories become &quot;other&quot;.
+            column. We&apos;ll choose categories for common merchants, and your own rules on the Categories page come first.
           </p>
         </div>
       ) : (

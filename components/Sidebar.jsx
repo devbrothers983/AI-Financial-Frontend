@@ -29,6 +29,7 @@ import {
   Landmark,
   Repeat,
   Tags,
+  Home,
 } from "lucide-react";
 
 import Logo from "./Logo";
@@ -46,6 +47,7 @@ const USER_GROUPS = [
       { href: "/dashboard/transactions", label: "Transactions", icon: ArrowLeftRight },
       { href: "/dashboard/subscriptions", label: "Subscriptions", icon: Repeat },
       { href: "/dashboard/categories", label: "Categories", icon: Tags },
+      { href: "/dashboard/household", label: "Household", icon: Home },
       { href: "/dashboard/banks", label: "Connected banks", icon: Landmark, requiresBankAccess: true },
       { href: "/dashboard/budgets", label: "Budgets", icon: PieChart },
       { href: "/dashboard/goals", label: "Goals", icon: Target },

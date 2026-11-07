@@ -25,6 +25,8 @@ import {
   Landmark,
   AlertTriangle,
   Repeat,
+  Wand2,
+  ShoppingBag,
 } from "lucide-react";
 
 import { getTransactions, deleteTransaction } from "@/services/transactionService";
@@ -34,7 +36,7 @@ import ImportTransactionsModal from "@/components/transactions/ImportTransaction
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import Modal from "@/components/ui/Modal";
 import { useCategories, formatCategory } from "@/lib/useCategories";
-import { saveCategoryRule } from "@/services/categoryService";
+import { saveCategoryRule, sortUncategorized } from "@/services/categoryService";
 import Skeleton from "@/components/Skeleton";
 
 const CATEGORY_ICONS = {
@@ -48,6 +50,7 @@ const CATEGORY_ICONS = {
   investment: TrendingUp,
   gift: Gift,
   subscriptions: Repeat,
+  shopping: ShoppingBag,
   other: MoreHorizontal,
 };
 
@@ -83,6 +86,7 @@ const TransactionsPage = () => {
   const { all: allCategories } = useCategories();
   const [ruleSuggestion, setRuleSuggestion] = useState(null);
   const [savingRule, setSavingRule] = useState(false);
+  const [sorting, setSorting] = useState(false);
 
   const fetchTransactions = useCallback(async () => {
     try {
@@ -140,6 +144,19 @@ const TransactionsPage = () => {
     }
   };
 
+  const handleSortUncategorized = async () => {
+    try {
+      setSorting(true);
+      const response = await sortUncategorized();
+      toast.success(response.message);
+      fetchTransactions();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Couldn't sort your transactions");
+    } finally {
+      setSorting(false);
+    }
+  };
+
   const handleExport = async () => {
     try {
       setExporting(true);
@@ -181,6 +198,15 @@ const TransactionsPage = () => {
           >
             <Upload className="h-4 w-4" />
             Import
+          </button>
+          <button
+            onClick={handleSortUncategorized}
+            disabled={sorting}
+            title="Finds a category for transactions in Other. Categories you chose aren't changed."
+            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
+          >
+            {sorting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+            Sort uncategorized
           </button>
           <button
             onClick={handleExport}
