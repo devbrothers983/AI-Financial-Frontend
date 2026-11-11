@@ -8,6 +8,7 @@ import Sidebar from "@/components/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import AnnouncementBanner from "@/components/dashboard/AnnouncementBanner";
 import ViewAsBanner from "@/components/dashboard/ViewAsBanner";
+import CoachLauncher from "@/components/coach/CoachLauncher";
 
 const ADMIN_ONLY_PREFIXES = [
   "/dashboard/users",
@@ -51,6 +52,8 @@ export default function DashboardLayout({ children }) {
           {children}
         </main>
       </div>
+
+      {hydrated && isAuthenticated && <CoachLauncher />}
     </div>
   );
 }

@@ -148,7 +148,7 @@ const InstallPrompt = () => {
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-sm rounded-2xl border border-slate-200 bg-white p-4 shadow-xl shadow-slate-900/10 dark:border-slate-800 dark:bg-slate-900 sm:inset-x-auto sm:right-4">
+    <div className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-sm rounded-2xl border border-slate-200 bg-white p-4 shadow-xl shadow-slate-900/10 dark:border-slate-800 dark:bg-slate-900 sm:inset-x-auto sm:left-4">
       <div className="flex items-center gap-3">
         <img src="/icons/icon-192.png" alt="AI Financial Coach" className="h-11 w-11 shrink-0 rounded-xl" />
         <div className="min-w-0 flex-1">

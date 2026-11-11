@@ -17,7 +17,8 @@ const SUGGESTIONS = [
   "How much do my subscriptions cost?",
 ];
 
-const CoachChat = () => {
+// `fill` makes the chat take its container's full height, for the floating panel
+const CoachChat = ({ fill = false }) => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [question, setQuestion] = useState("");
@@ -79,7 +80,11 @@ const CoachChat = () => {
   };
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+    <div
+      className={`flex flex-col overflow-hidden bg-white dark:bg-slate-900 ${
+        fill ? "h-full" : "rounded-2xl border border-slate-200 dark:border-slate-800"
+      }`}
+    >
       {messages.length > 0 && (
         <div className="flex justify-end border-b border-slate-100 px-3 py-2 dark:border-slate-800">
           <button
@@ -91,7 +96,7 @@ const CoachChat = () => {
         </div>
       )}
 
-      <div className="flex max-h-[60vh] min-h-72 flex-col gap-4 overflow-y-auto p-4">
+      <div className={`flex flex-col gap-4 overflow-y-auto p-4 ${fill ? "min-h-0 flex-1" : "max-h-[60vh] min-h-72"}`}>
         {loading ? (
           <>
             <Skeleton className="h-14 w-2/3 rounded-2xl" />
