@@ -80,11 +80,30 @@ const CoachLauncher = () => {
         <button
           onClick={() => setOpen(true)}
           aria-label="Ask the AI Coach"
-          title="Ask the AI Coach"
-          className="fixed right-5 z-40 rounded-xl p-1 text-emerald-600 drop-shadow-lg transition-transform hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 dark:text-emerald-400 cursor-pointer"
+          className="group fixed right-5 z-40 flex items-center gap-3 rounded-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-500 cursor-pointer"
           style={{ bottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
         >
-          <BotMessageSquare className="h-11 w-11" strokeWidth={1.75} />
+          {/* label that slides out on hover or keyboard focus (not shown on touch screens) */}
+          <span className="pointer-events-none hidden translate-x-2 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white opacity-0 shadow-lg transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 sm:block dark:bg-white dark:text-slate-900">
+            Ask AI Coach
+          </span>
+
+          <span className="relative flex h-14 w-14 items-center justify-center">
+            {/* a soft pulse that draws the eye; skipped for people who prefer less motion */}
+            <span className="absolute inset-0 rounded-full bg-emerald-400/40 motion-safe:animate-ping [animation-duration:2.4s]" />
+
+            <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 via-emerald-500 to-indigo-600 text-white shadow-lg shadow-emerald-600/30 ring-4 ring-white transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:scale-105 dark:ring-slate-900">
+              <BotMessageSquare className="h-7 w-7" strokeWidth={1.75} />
+            </span>
+
+            {/* AI sparkle badge */}
+            <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-amber-500 shadow-md dark:bg-slate-900 dark:text-amber-400">
+              <Sparkles className="h-3 w-3" fill="currentColor" />
+            </span>
+
+            {/* online dot */}
+            <span className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-400 dark:border-slate-900" />
+          </span>
         </button>
       )}
     </>
