@@ -5,12 +5,15 @@
 // - API requests and cross-origin requests are never intercepted — this is
 //   a financial app, so budgets/transactions/goals must always come from
 //   the network, never a stale cache.
-// - Page navigations: network-first, falling back to a cached copy, then
-//   to /offline.html if nothing is available.
-// - Other same-origin GETs (JS/CSS/icons/manifest): cache-first, refreshed
-//   in the background on every request.
+// - Build files under /_next/static/ and the app icons: cache-first. Their
+//   names change whenever their content does, so a cached copy is never stale.
+// - Everything else (page navigations, and the page data Next.js fetches when
+//   moving between pages): network-first, falling back to a cached copy, then
+//   to /offline.html. Serving these from the cache first showed old pages,
+//   with old settings, after a new deploy.
 
-const CACHE_VERSION = "v1";
+// bumping this clears every older cache when the new worker activates
+const CACHE_VERSION = "v2";
 const RUNTIME_CACHE = `fincoach-runtime-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline.html";
 
@@ -30,6 +33,16 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+const isUnchangingFile = (url) => url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/");
+
+const saveCopy = (request, response) => {
+  if (response.ok) {
+    const copy = response.clone();
+    caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
+  }
+  return response;
+};
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
 
@@ -41,31 +54,18 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
-          return response;
-        })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match(OFFLINE_URL)))
-    );
+  if (isUnchangingFile(url)) {
+    event.respondWith(caches.match(request).then((cached) => cached || fetch(request).then((response) => saveCopy(request, response))));
     return;
   }
 
   event.respondWith(
-    caches.match(request).then((cached) => {
-      const fetchPromise = fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
-          }
-          return response;
-        })
-        .catch(() => cached);
-      return cached || fetchPromise;
-    })
+    fetch(request)
+      .then((response) => saveCopy(request, response))
+      .catch(() =>
+        caches
+          .match(request)
+          .then((cached) => cached || (request.mode === "navigate" ? caches.match(OFFLINE_URL) : Response.error()))
+      )
   );
 });
