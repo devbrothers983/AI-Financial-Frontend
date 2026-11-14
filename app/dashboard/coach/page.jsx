@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Loader2, ArrowRight, AlertTriangle, CheckCircle2, XCircle, MessageCircle, ShoppingBag } from "lucide-react";
+import { Sparkles, Loader2, ArrowRight, AlertTriangle, CheckCircle2, XCircle, MessageCircle, ShoppingBag, Wallet, CalendarDays, Target } from "lucide-react";
+import Link from "next/link";
 
 import { checkAffordability } from "@/services/coachService";
 import CoachChat from "@/components/coach/CoachChat";
@@ -38,6 +39,33 @@ const inputClass = (hasError) =>
       ? "border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-100 dark:border-red-800 dark:focus:ring-red-500/20"
       : "border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 dark:border-slate-700 dark:focus:ring-emerald-500/20"
   }`;
+
+const money = (value, currency = "USD") => {
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value || 0);
+  } catch {
+    return `${currency} ${Number(value || 0).toFixed(2)}`;
+  }
+};
+
+const weeksLabel = (weeks) => {
+  if (weeks < 1) return "less than a week";
+  const rounded = Math.round(weeks);
+  return rounded === 1 ? "about 1 week" : `about ${rounded} weeks`;
+};
+
+// One "before → after" row of the impact section
+const ImpactRow = ({ icon: Icon, label, before, after, bad }) => (
+  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800">
+    <Icon className="h-4 w-4 shrink-0 text-slate-400" />
+    <p className="flex-1 text-sm text-slate-600 dark:text-slate-300">{label}</p>
+    <p className="text-sm font-semibold text-slate-900 dark:text-white">
+      <span className="font-normal text-slate-400 dark:text-slate-500">{before}</span>
+      <ArrowRight className="mx-1.5 inline h-3.5 w-3.5 text-slate-400" />
+      <span className={bad ? "text-red-500" : ""}>{after}</span>
+    </p>
+  </div>
+);
 
 const TABS = [
   { value: "chat", label: "Ask the coach", icon: MessageCircle },
@@ -222,23 +250,101 @@ const CoachPage = () => {
               <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">{result.analysis.suggested_action}</p>
             </div>
 
+            <div className="mt-5 border-t border-slate-100 pt-5 dark:border-slate-800">
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                How {money(result.purchase.price, result.currency)} affects your money
+              </p>
+
+              <div className="mt-3 flex flex-col gap-2">
+                {result.budgetImpact ? (
+                  <>
+                    <ImpactRow
+                      icon={Wallet}
+                      label="Left in this month's budget"
+                      before={money(result.budgetImpact.remainingBefore, result.currency)}
+                      after={money(result.budgetImpact.remainingAfter, result.currency)}
+                      bad={result.budgetImpact.remainingAfter < 0}
+                    />
+                    <ImpactRow
+                      icon={CalendarDays}
+                      label={`Safe to spend per day (${result.budgetImpact.daysLeft} day${result.budgetImpact.daysLeft === 1 ? "" : "s"} left)`}
+                      before={money(result.budgetImpact.dailyBefore, result.currency)}
+                      after={money(result.budgetImpact.dailyAfter, result.currency)}
+                      bad={result.budgetImpact.dailyAfter <= 0}
+                    />
+                    <div className="px-1">
+                      <div className="flex h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                        <div
+                          className="h-full bg-slate-400 dark:bg-slate-500"
+                          style={{ width: `${Math.min(result.budgetImpact.percentUsedBefore, 100)}%` }}
+                        />
+                        <div
+                          className={`h-full ${result.budgetImpact.percentUsedAfter > 100 ? "bg-red-500" : "bg-amber-400"}`}
+                          style={{
+                            width: `${Math.max(
+                              Math.min(result.budgetImpact.percentUsedAfter, 100) -
+                                Math.min(result.budgetImpact.percentUsedBefore, 100),
+                              0
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                      <p className="mt-1.5 text-xs text-slate-400 dark:text-slate-500">
+                        Budget used: {Math.round(result.budgetImpact.percentUsedBefore)}% now,{" "}
+                        {Math.round(result.budgetImpact.percentUsedAfter)}% after buying
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                    You haven&apos;t set a budget for this month, so the coach used your income and spending instead.{" "}
+                    <Link href="/dashboard/budgets" className="font-semibold text-emerald-600 hover:underline dark:text-emerald-400">
+                      Set a budget
+                    </Link>{" "}
+                    to see the exact effect.
+                  </p>
+                )}
+
+                {result.goalImpact && (
+                  <div className="flex items-start gap-3 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800">
+                    <Target className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+                    <p className="text-sm text-slate-600 dark:text-slate-300">
+                      {result.goalImpact.notSaving ? (
+                        <>
+                          You aren&apos;t saving money each month right now, so this would come straight out of your
+                          progress on <span className="font-semibold">{result.goalImpact.title}</span>.
+                        </>
+                      ) : (
+                        <>
+                          Paying from savings would push <span className="font-semibold">{result.goalImpact.title}</span>{" "}
+                          back by <span className="font-semibold">{weeksLabel(result.goalImpact.delayWeeks)}</span>.
+                        </>
+                      )}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4 dark:border-slate-800 sm:grid-cols-4">
               <div>
-                <p className="text-xs text-slate-400 dark:text-slate-500">Monthly income</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Income this month</p>
                 <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                  ${result.financialContext.monthlyIncome.toLocaleString()}
+                  {money(result.financialContext.monthlyIncome, result.currency)}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-slate-400 dark:text-slate-500">Monthly expenses</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Spent this month</p>
                 <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                  ${result.financialContext.monthlyExpenses.toLocaleString()}
+                  {money(result.financialContext.monthlyExpenses, result.currency)}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-slate-400 dark:text-slate-500">Savings rate</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Usually saved / month</p>
                 <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                  {result.financialContext.savingsRate}%
+                  {(result.financialContext.typicalMonthlySavings ?? null) !== null
+                    ? money(result.financialContext.typicalMonthlySavings, result.currency)
+                    : "Not enough history"}
                 </p>
               </div>
               <div>

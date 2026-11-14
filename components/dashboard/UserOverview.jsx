@@ -11,6 +11,7 @@ import GoalCard from "@/components/GoalCard";
 import TransactionTable from "@/components/TransactionTable";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
 import Skeleton from "@/components/Skeleton";
+import BudgetPaceWarning from "@/components/dashboard/BudgetPaceWarning";
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value || 0);
@@ -197,6 +198,12 @@ const UserOverview = () => {
                 </p>
               </motion.div>
             </motion.div>
+
+            {isCurrentMonth && dashboard?.budget?.pace && (
+              <motion.div variants={item}>
+                <BudgetPaceWarning pace={dashboard.budget.pace} formatCurrency={formatCurrency} />
+              </motion.div>
+            )}
 
             <motion.div variants={item}>
               <h2 className="mb-3 text-base font-semibold text-slate-900 dark:text-white">This month&apos;s budget</h2>
