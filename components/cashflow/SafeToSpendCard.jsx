@@ -84,28 +84,35 @@ const SafeToSpendCard = ({ compact = false }) => {
     );
   }
 
-  const until = data.payday.source === "month_end" ? "the end of the month" : `payday (${shortDate(data.payday.date)})`;
+  // a no-break space keeps "Nov 20" together when the line wraps on a phone
+  const NO_BREAK_SPACE = String.fromCharCode(160);
+  const until =
+    data.payday.source === "month_end"
+      ? "the end of the month"
+      : `payday (${shortDate(data.payday.date).split(" ").join(NO_BREAK_SPACE)})`;
   const modal = <PayPlanModal open={settingsOpen} onClose={() => setSettingsOpen(false)} currency={currency} />;
 
   // ---- not set up yet: ask for the balance ----
   if (data.level === "setup") {
     return (
-      <div className="rounded-2xl border border-dashed border-emerald-300 bg-white p-5 dark:border-emerald-500/40 dark:bg-slate-900">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
-            <Wallet className="h-5 w-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold text-slate-900 dark:text-white">How much can you safely spend until {until}?</p>
-            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-              Add the money in your account and we&apos;ll take off your bills
-              {data.billsTotal > 0 ? ` (${money(data.billsTotal, currency)} due before then)` : ""} and goal savings, then show
-              what&apos;s left for each day.
-            </p>
+      <div className="rounded-2xl border border-dashed border-emerald-300 bg-white p-4 dark:border-emerald-500/40 dark:bg-slate-900 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="flex items-start gap-3 sm:flex-1">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
+              <Wallet className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-semibold text-slate-900 dark:text-white">How much can you safely spend until {until}?</p>
+              <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                Add the money in your account. We&apos;ll take off your bills
+                {data.billsTotal > 0 ? ` (${money(data.billsTotal, currency)} due before then)` : ""} and goal savings, and show
+                what&apos;s left for each day.
+              </p>
+            </div>
           </div>
           <button
             onClick={() => setSettingsOpen(true)}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 cursor-pointer"
+            className="w-full shrink-0 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 sm:w-auto cursor-pointer"
           >
             Add my balance
           </button>
@@ -116,6 +123,7 @@ const SafeToSpendCard = ({ compact = false }) => {
   }
 
   const tone = TONES[data.level] || TONES.ok;
+  const short = data.level === "short";
   const balanceHint =
     data.balance.source === "bank"
       ? `From your connected bank${data.balance.asOf ? `, ${longDate(data.balance.asOf)}` : ""}`
@@ -125,72 +133,95 @@ const SafeToSpendCard = ({ compact = false }) => {
             : ""
         }`;
 
-  return (
-    <div className={`rounded-2xl border p-5 shadow-sm ${tone.box}`}>
-      <div className="flex flex-wrap items-start gap-4">
-        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tone.icon}`}>
-          {data.level === "short" ? <AlertOctagon className="h-5 w-5" /> : <Wallet className="h-5 w-5" />}
-        </div>
+  const stats = [
+    short
+      ? { label: "Short by", value: money(data.shortBy, currency) }
+      : { label: "Per day", value: money(data.perDay, currency) },
+    { label: "Days left", value: String(data.daysLeft) },
+    { label: "Bills due", value: money(data.billsTotal, currency) },
+  ];
 
-        <div className="min-w-0 flex-1">
-          {data.level === "short" ? (
+  return (
+    <div className={`rounded-2xl border p-4 shadow-sm sm:p-5 ${tone.box}`}>
+      {/* header */}
+      <div className="flex items-center gap-3">
+        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${tone.icon}`}>
+          {short ? <AlertOctagon className="h-4.5 w-4.5" /> : <Wallet className="h-4.5 w-4.5" />}
+        </div>
+        <p className={`min-w-0 flex-1 text-sm font-semibold ${tone.text}`}>
+          {short ? `Not enough money before ${until}` : `Safe to spend until ${until}`}
+        </p>
+        <button
+          onClick={() => setSettingsOpen(true)}
+          aria-label="Pay and balance settings"
+          title="Pay & balance"
+          className={`shrink-0 rounded-lg p-2 hover:bg-white/60 dark:hover:bg-white/10 cursor-pointer ${tone.text}`}
+        >
+          <Settings2 className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* amount on the left, the three figures in a row beside it */}
+      <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-center md:gap-6">
+        <div className="md:flex-1">
+          {short ? (
             <>
-              <p className={`text-xl font-bold ${tone.big}`}>
-                You may be {money(data.shortBy, currency)} short before {until}
-              </p>
+              <p className={`text-2xl font-bold sm:text-3xl ${tone.big}`}>You may be {money(data.shortBy, currency)} short</p>
               <p className={`mt-1 text-sm ${tone.text}`}>
-                Your bills and goal savings before then are more than the money you have
-                {data.shortOn ? `, starting ${longDate(data.shortOn)}` : ""}. Hold off on spending that isn&apos;t essential, or move
-                money in.
+                Your bills and goal savings are more than your money
+                {data.shortOn ? `, starting ${longDate(data.shortOn)}` : ""}. Hold off on spending that isn&apos;t essential.
               </p>
             </>
           ) : (
             <>
-              <p className={`text-sm font-medium ${tone.text}`}>Safe to spend until {until}</p>
-              <p className={`text-3xl font-bold tabular-nums ${tone.big}`}>{money(data.safeToSpend, currency)}</p>
-              <p className={`mt-0.5 text-sm ${tone.text}`}>
-                About <span className="font-semibold">{money(data.perDay, currency)} a day</span> for the next {data.daysLeft} day
-                {data.daysLeft === 1 ? "" : "s"}
+              <p className={`text-3xl font-bold tabular-nums sm:text-4xl ${tone.big}`}>{money(data.safeToSpend, currency)}</p>
+              <p className={`mt-1 text-sm ${tone.text}`}>
                 {data.level === "tight" && data.typicalDaily
-                  ? `. That's less than half of your usual ${money(data.typicalDaily, currency)} a day, so go easy.`
-                  : "."}
+                  ? `Less than half your usual ${money(data.typicalDaily, currency)} a day, so go easy.`
+                  : `Left to spend after bills${data.goalsTotal > 0 ? " and goal savings" : ""}.`}
               </p>
             </>
           )}
-
-          {data.payday.source === "month_end" && (
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className={`mt-2 inline-flex items-center gap-1 text-xs font-semibold underline-offset-2 hover:underline cursor-pointer ${tone.text}`}
-            >
-              <Sparkles className="h-3.5 w-3.5" /> Tell us your payday for a more accurate number
-            </button>
-          )}
         </div>
 
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setSettingsOpen(true)}
-            aria-label="Pay and balance settings"
-            title="Pay & balance"
-            className={`rounded-lg p-2 hover:bg-white/60 dark:hover:bg-white/10 cursor-pointer ${tone.text}`}
-          >
-            <Settings2 className="h-4 w-4" />
-          </button>
+        <div className="grid grid-cols-3 gap-2 md:w-96 md:shrink-0">
+          {stats.map((stat) => (
+            <div key={stat.label} className="rounded-xl bg-white/70 px-3 py-2.5 text-center dark:bg-slate-900/40">
+              <p className={`text-[11px] font-medium uppercase tracking-wide opacity-75 ${tone.text}`}>{stat.label}</p>
+              <p className={`mt-0.5 truncate text-base font-bold tabular-nums sm:text-lg ${tone.big}`}>{stat.value}</p>
+            </div>
+          ))}
         </div>
       </div>
 
-      <button
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className={`mt-3 flex items-center gap-1 text-xs font-semibold cursor-pointer ${tone.text}`}
-      >
-        How we worked this out
-        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
+      {data.payday.source === "month_end" && (
+        <button
+          onClick={() => setSettingsOpen(true)}
+          className={`mt-3 inline-flex items-center gap-1 text-xs font-semibold underline-offset-2 hover:underline cursor-pointer ${tone.text}`}
+        >
+          <Sparkles className="h-3.5 w-3.5" /> Tell us your payday for a more accurate number
+        </button>
+      )}
+
+      {/* footer */}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-current/10 pt-3">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className={`flex items-center gap-1 text-xs font-semibold cursor-pointer ${tone.text}`}
+        >
+          How we worked this out
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+        {!compact && (
+          <Link href="/dashboard/bills" className={`inline-flex items-center gap-1.5 text-xs font-semibold hover:underline ${tone.text}`}>
+            <CalendarDays className="h-3.5 w-3.5" /> Bills & calendar
+          </Link>
+        )}
+      </div>
 
       {open && (
-        <div className={`mt-2 rounded-xl bg-white/70 px-4 py-2 text-sm dark:bg-slate-900/40 ${tone.text}`}>
+        <div className={`mt-3 rounded-xl bg-white/70 px-4 py-2 text-sm dark:bg-slate-900/40 ${tone.text}`}>
           <Row
             label={
               <span className="inline-flex items-center gap-1.5">
@@ -223,15 +254,6 @@ const SafeToSpendCard = ({ compact = false }) => {
           )}
           <Row label="Safe to spend" value={money(data.safeToSpend, currency)} strong />
         </div>
-      )}
-
-      {!compact && (
-        <Link
-          href="/dashboard/bills"
-          className={`mt-3 inline-flex items-center gap-1.5 text-xs font-semibold hover:underline ${tone.text}`}
-        >
-          <CalendarDays className="h-3.5 w-3.5" /> Bills & calendar
-        </Link>
       )}
 
       {modal}
