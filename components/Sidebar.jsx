@@ -30,6 +30,7 @@ import {
   Repeat,
   Tags,
   Home,
+  CalendarDays,
 } from "lucide-react";
 
 import Logo from "./Logo";
@@ -45,6 +46,7 @@ const USER_GROUPS = [
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/dashboard/transactions", label: "Transactions", icon: ArrowLeftRight },
+      { href: "/dashboard/bills", label: "Bills & calendar", icon: CalendarDays },
       { href: "/dashboard/subscriptions", label: "Subscriptions", icon: Repeat },
       { href: "/dashboard/categories", label: "Categories", icon: Tags },
       { href: "/dashboard/household", label: "Household", icon: Home },

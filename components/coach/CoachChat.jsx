@@ -2,13 +2,17 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
+import { useSelector } from "react-redux";
 import { Sparkles, Send, Loader2, RotateCcw } from "lucide-react";
 
 import { getCoachChat, sendCoachMessage, clearCoachChat } from "@/services/coachService";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import SuggestionCard from "@/components/coach/SuggestionCard";
 import Skeleton from "@/components/Skeleton";
 
 const SUGGESTIONS = [
+  "Make me a budget for this month",
+  "Help me save $500 for a trip by March",
   "Why did I overspend this month?",
   "Where is most of my money going?",
   "How does this month compare with last month?",
@@ -19,6 +23,7 @@ const SUGGESTIONS = [
 
 // `fill` makes the chat take its container's full height, for the floating panel
 const CoachChat = ({ fill = false }) => {
+  const currency = useSelector((state) => state.auth.user?.currency) || "USD";
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [question, setQuestion] = useState("");
@@ -121,7 +126,7 @@ const CoachChat = ({ fill = false }) => {
           </div>
         ) : (
           messages.map((m, i) => (
-            <div key={m._id || `${m.role}-${i}`} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div key={m._id || `${m.role}-${i}`} className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}>
               <div
                 className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm ${
                   m.role === "user"
@@ -131,6 +136,13 @@ const CoachChat = ({ fill = false }) => {
               >
                 {m.content}
               </div>
+              {m.suggestions?.length > 0 && (
+                <div className="mt-2 flex w-full max-w-[85%] flex-col gap-2">
+                  {m.suggestions.map((s) => (
+                    <SuggestionCard key={s._id} suggestion={s} currency={currency} />
+                  ))}
+                </div>
+              )}
             </div>
           ))
         )}

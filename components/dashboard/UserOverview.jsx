@@ -12,6 +12,8 @@ import TransactionTable from "@/components/TransactionTable";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
 import Skeleton from "@/components/Skeleton";
 import BudgetPaceWarning from "@/components/dashboard/BudgetPaceWarning";
+import SafeToSpendCard from "@/components/cashflow/SafeToSpendCard";
+import AutopilotDashboardCard from "@/components/coach/AutopilotDashboardCard";
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value || 0);
@@ -198,6 +200,18 @@ const UserOverview = () => {
                 </p>
               </motion.div>
             </motion.div>
+
+            {isCurrentMonth && (
+              <motion.div variants={item}>
+                <SafeToSpendCard />
+              </motion.div>
+            )}
+
+            {isCurrentMonth && (
+              <motion.div variants={item}>
+                <AutopilotDashboardCard />
+              </motion.div>
+            )}
 
             {isCurrentMonth && dashboard?.budget?.pace && (
               <motion.div variants={item}>

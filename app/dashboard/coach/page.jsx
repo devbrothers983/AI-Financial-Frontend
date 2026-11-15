@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Loader2, ArrowRight, AlertTriangle, CheckCircle2, XCircle, MessageCircle, ShoppingBag, Wallet, CalendarDays, Target } from "lucide-react";
+import { Sparkles, Loader2, ArrowRight, AlertTriangle, CheckCircle2, XCircle, MessageCircle, ShoppingBag, Wallet, CalendarDays, Target, Rocket } from "lucide-react";
 import Link from "next/link";
 
 import { checkAffordability } from "@/services/coachService";
 import CoachChat from "@/components/coach/CoachChat";
+import AutopilotPanel from "@/components/coach/AutopilotPanel";
 
 const RECOMMENDATION_STYLES = {
   AFFORDABLE: {
@@ -70,6 +71,7 @@ const ImpactRow = ({ icon: Icon, label, before, after, bad }) => (
 const TABS = [
   { value: "chat", label: "Ask the coach", icon: MessageCircle },
   { value: "purchase", label: "Can I afford it?", icon: ShoppingBag },
+  { value: "autopilot", label: "Autopilot", icon: Rocket },
 ];
 
 const CoachPage = () => {
@@ -78,6 +80,15 @@ const CoachPage = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+
+  // links from the dashboard and the weekly email open a tab directly: ?tab=autopilot
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const wanted = new URLSearchParams(window.location.search).get("tab");
+      if (TABS.some((t) => t.value === wanted)) setTab(wanted);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -138,13 +149,13 @@ const CoachPage = () => {
         </div>
       </div>
 
-      <div className="mt-6 flex gap-2">
+      <div className="mt-6 flex gap-2 overflow-x-auto">
         {TABS.map((t) => (
           <button
             key={t.value}
             onClick={() => setTab(t.value)}
             aria-pressed={tab === t.value}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium cursor-pointer ${
+            className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium cursor-pointer ${
               tab === t.value
                 ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
                 : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
@@ -154,6 +165,12 @@ const CoachPage = () => {
           </button>
         ))}
       </div>
+
+      {tab === "autopilot" && (
+        <div className="mt-4">
+          <AutopilotPanel />
+        </div>
+      )}
 
       {tab === "chat" && (
         <div className="mt-4">
